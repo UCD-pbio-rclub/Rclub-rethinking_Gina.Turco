@@ -42,3 +42,4 @@ Pr(Earth|land)  = 0.23
 |black, white |= 2 |X 1 |= 2/3 |
 |black, black |= 1 |X 1 |= 1/3 |
 
+_JNM: Nice table but I think the conjectures don't match up with the counts correctly._
