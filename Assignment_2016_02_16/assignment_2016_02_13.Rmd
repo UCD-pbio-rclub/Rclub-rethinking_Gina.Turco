@@ -5,7 +5,7 @@ R Club Chapter 2 Medium
 Grid Approximate posterior dist for each of the followiung sets of observations
 assumuing uniform pior
 #### 1. W,W,W
-
+##p_grid is like weighing of coin
 ```{r}
 w = 3
 # define grid
@@ -186,9 +186,18 @@ Ways I can produce two black cards = 1 X Piror Plasuablity 1/2
 
 
 ### 2H1
+
+### write out in bayse equation....
 Priors...
 panda_species = .5
 species A twins = 10%
 species B twins = 20%
+## what is the problity that its A vrs B
+prior = that probablity A or B is even
+likelihood = 
 
-Pr(B|twins) = Pr(twins|B) * Pr(B) / Pr(A)
+Pr(A|twins) = Pr(twins|A) * Pr(A) / Pr(twins)
+= (0.1) * (0.5)/ 
+0.1666666
+
+d
