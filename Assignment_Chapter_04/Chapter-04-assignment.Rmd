@@ -5,15 +5,77 @@ __Name:__
 
 # For 03/17/16
 
-## 4E1
+## 4E1 In the model definition below, which line is the likelihood?
 
-## 4E2
 
-## 4E3
+likelihood = binomal(number of times seen, number of samples)
+likelihood = yi ∼ Normal(μ, σ)
+The value yi is distrbuted normally by the number of samples and the probality which is givin by the mean and variance....
 
-## 4M1
+σ prior = σ ∼ Uniform(0, 10) uniform prior between zero and 10
+μ prior = μ ∼ Normal(0, 10) gaussian prior centered on 0 and
+prios are problistic not known with certinity
 
-## 4M2
+
+## 4E2 In the model definition just above, how many parameters are in the posterior distribution? 
+
+10
+
+
+
+## 4E3 Using the model definition above, write down the appropriate form of Bayes’ theorem that includes the proper likelihood and priors.
+
+pr(μ,σ|h) = ∏ Normal(hi|μ,σ)Normal(μ|0,10)Uniform(σ|0,10) / ∫ ∫ ∏ Normal(hi|μ, σ)Normal(μ|0, 10)Uniform(σ|0, 50)dμdσ
+
+## 4M1 For the model definition below, simulate observed heights from the prior (not the posterior).
+
+yi ∼ Normal(μ, σ)
+μ ∼ Normal(0, 10) 
+σ ∼ Uniform(0, 10)
+
+
+```{r}
+
+flist <- alist(
+    height ~ dnorm( mu , sigma ) ,
+    mu ~ dnorm( 0 , 10 ) ,
+    sigma ~ dunif( 0 , 10 )
+)
+sample_mu <- rnorm( 1e4 , 0 , 10 )
+sample_sigma <- runif( 1e4 , 0 , 10 )
+
+prior_h <- rnorm( 1e4 , sample_mu , sample_sigma )
+dens( prior_h )
+
+yi ∼ Normal(μ, σ)
+μ ∼ Normal(0, 10) σ ∼ Uniform(0, 10)
+```
+
+## 4M2 Translate the model just above into a map formula.
+
+```{r}
+library(rethinking)
+data(Howell1)
+d <- Howell1
+
+m4.2 <- map(
+        alist(
+            height ~ dnorm( mu , sigma ) ,
+            mu ~ dnorm( 0 , 10 ) ,
+            sigma ~ dunif( 0 , 10 )
+),
+        data=d )
+precis( m4.2 )
+
+
+
+
+```
+
+
+
+
+
 
 # For 03/24/16
 
