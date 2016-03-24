@@ -79,17 +79,90 @@ precis( m4.2 )
 
 # For 03/24/16
 
-## 4E4
+## 4E4 In the model definition below, which line is the linear model? 
 
-## 4E5
+This is the linear model : μi =α+βxi
 
-## 4M3
+yi ∼ Normal(μ, σ)
+μi =α+βxi
+α ∼ Normal(0, 10) 
+β ∼ Normal(0, 1)
+σ ∼ Uniform(0, 10)
 
-## 4M4
 
-## 4M5
 
-## 4M6
+## 4E5 In the model definition just above, how many parameters are in the posterior distribution?
+ 3 - μ, σ and μi? 
+
+## 4M3 Translate the map model formula below into a mathematical model definition.
+
+```{r}
+flist <- alist(
+    y ~ dnorm( mu , sigma ),
+    mu <- a + b*x,
+    a ~ dnorm( 0 , 50 ),
+    b ~ dunif( 0 , 10 ),
+    sigma ~ dunif( 0 , 50 )
+)
+```
+
+yi ∼ Normal(μ, σ)
+μi =α+βxi
+α ∼ Normal(0, 50) 
+β ∼ Normal(0, 10)
+σ ∼ Uniform(0, 50)
+
+
+## 4M4 A sample of students is measured for height each year for 3 years.After the third year,you want to fit a linear regression predicting height using year as a predictor. Write down the mathematical model definition for this regression, using any variable names and priors you choose. Be prepared to defend your choice of priors.
+
+yi ∼ Normal(μ, σ)
+* linear model
+μi =α+βyr
+* yaxis
+α ∼ Normal(63, 100) 
+* slope
+β ∼ Normal(0, 10)
+* variance
+σ ∼ Uniform(0, 50)
+
+
+ I’ve widened the prior for α, since as you’ll see it is common for the intercept in a linear model to swing a long way from the mean of the outcome variable. The flat prior here with a huge standard deviation will allow it to move wherever it needs to. 
+
+β = 0, weight has no relationship to height. So many people see it as conservative assumption. And such a prior will pull probability mass towards zero, leading to more conservative estimates
+
+50 is a pretty broud deviance 
+
+## 4M5 now suppose I tell you that the average height in the first year was 120 cm and that every student got taller each year. Does this information lead you to change your choice of priors? How?
+
+yi ∼ Normal(μ, σ)
+* intercept
+μi =α+βyr
+* yaxis 
+α ∼ Normal(120, 50) 
+* slope
+β ∼ Normal(0, 10)
+* variance
+σ ∼ Uniform(0, 50)
+
+
+
+## 4M6 Now suppose I tell you that the variance among heights for students of the same age is never more than 64cm. How does this lead you to revise your priors?
+
+
+yi ∼ Normal(μ, σ)
+* intercept
+μi =α+βyr
+* yaxis 
+α ∼ Normal(120, 50) 
+* slope
+β ∼ Normal(0, 10)
+* variance
+σ ∼ Uniform(0, 64)
+
+
+
+
+
 
 # For 03/31/16
 
