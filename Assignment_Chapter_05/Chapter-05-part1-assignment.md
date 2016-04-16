@@ -24,8 +24,42 @@ Av animal diversity =α+βLli +βPpi
 No one wants to eat Texas BBQ after 1pm
 When really correlated with the time to prep the meat and when the meat is due.
 
-```{r}
+
+```r
 library(rethinking)
+```
+
+```
+## Loading required package: rstan
+```
+
+```
+## Loading required package: ggplot2
+```
+
+```
+## Warning: package 'ggplot2' was built under R version 3.2.4
+```
+
+```
+## rstan (Version 2.9.0-3, packaged: 2016-02-11 15:54:41 UTC, GitRev: 05c3d0058b6a)
+```
+
+```
+## For execution on a local, multicore CPU with excess RAM we recommend calling
+## rstan_options(auto_write = TRUE)
+## options(mc.cores = parallel::detectCores())
+```
+
+```
+## Loading required package: parallel
+```
+
+```
+## rethinking (Version 1.58)
+```
+
+```r
 N <- 100
 x_real <- rnorm( N )
 x_spur <- rnorm( N , x_real )
@@ -33,6 +67,8 @@ y <- rnorm( N , x_real )
 d <- data.frame(y,x_real,x_spur)
 pairs(d)
 ```
+
+![plot of chunk unnamed-chunk-1](figure/unnamed-chunk-1-1.png)
 
 
 ### 5M3 It is sometimes observed that the best predictor of fire risk is the presence of firefighters— States and localities with many firefighters also have more fires. Presumably firefighters do not cause fires. Nevertheless, this is not a spurious correlation. Instead fires cause firefighters. Consider the same reversal of causal inference in the context of the divorce and marriage data. How might a high divorce rate cause a higher marriage rate? Can you think of a way to evaluate this relationship, using multiple regression? 
@@ -52,7 +88,8 @@ m =α+βDdi +βSsi
 
 ### 5M4  In the divorce data, States with high numbers of Mormons (members of The Church of Jesus Christ of Latter-day Saints, LDS) have much lower divorce rates than the regression models expected. Find a list of LDS population by State and use those numbers as a predictor variable, predicting divorce rate using marriage rate, median age at marriage, and percent LDS population (possibly standardized). You may want to consider transformations of the raw percent LDS variable.
 
-```{r}
+
+```r
 ## data
 data(WaffleDivorce)
 d <- WaffleDivorce
@@ -81,6 +118,7 @@ m6.1 <- map(
 
 
 plot(precis(m6.1))
-
 ```
+
+![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-1.png)
 
