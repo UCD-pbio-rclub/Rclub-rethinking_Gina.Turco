@@ -69,32 +69,54 @@ f$groupsize.s <- (f$groupsize - mean(f$groupsize))/sd(f$groupsize)
 h5.1a <- map(
     alist(
         weight ~ dnorm( mu , sigma ) ,
-        mu <- a + ba*area.s ,
+        mu <- a + ba*area ,
         a ~ dnorm( 5 , 10) ,
         ba ~ dnorm( 0 , 1 ) ,
         sigma ~ dunif( 0 , 10)
 ),  data=f )
 
-plot(precis(h5.1))
+plot(precis(h5.1a))
+```
+
+![plot of chunk unnamed-chunk-1](figure/unnamed-chunk-1-1.png)
+
+```r
+precis(h5.1a)
 ```
 
 ```
-## Error in plot(precis(h5.1)): error in evaluating the argument 'x' in selecting a method for function 'plot': Error in precis(h5.1) : object 'h5.1' not found
+##       Mean StdDev  5.5% 94.5%
+## a     4.45   0.39  3.83  5.07
+## ba    0.02   0.12 -0.16  0.21
+## sigma 1.18   0.08  1.05  1.30
 ```
 
 ```r
-precis(h5.1)
+np.seq <- 0:10 
+pred.data <- data.frame( area=np.seq )
+mu <- link( h5.1a , data=pred.data , n=1e4 ) 
 ```
 
 ```
-## Error in precis(h5.1): object 'h5.1' not found
+## [ 1000 / 10000 ][ 2000 / 10000 ][ 3000 / 10000 ][ 4000 / 10000 ][ 5000 / 10000 ][ 6000 / 10000 ][ 7000 / 10000 ][ 8000 / 10000 ][ 9000 / 10000 ][ 10000 / 10000 ]
 ```
+
+```r
+mu.mean <- apply( mu , 2 , mean ) 
+mu.PI <- apply( mu , 2 , PI )
+plot( weight ~ area , data=f , col=rangi2 ) 
+lines( np.seq , mu.mean ) 
+lines( np.seq , mu.PI[1,] , lty=2 ) 
+lines( np.seq , mu.PI[2,] , lty=2 )
+```
+
+![plot of chunk unnamed-chunk-1](figure/unnamed-chunk-1-2.png)
 
 ```r
 h5.1b <- map(
     alist(
         weight ~ dnorm( mu , sigma ) ,
-        mu <- a + bs*groupsize.s ,
+        mu <- a + bs*groupsize ,
         a ~ dnorm( 5 , 10) ,
         bs ~ dnorm( 0 , 1 ) ,
         sigma ~ dunif( 0 , 10)
@@ -103,7 +125,7 @@ h5.1b <- map(
 plot(precis(h5.1b))
 ```
 
-![plot of chunk unnamed-chunk-1](figure/unnamed-chunk-1-1.png)
+![plot of chunk unnamed-chunk-1](figure/unnamed-chunk-1-3.png)
 
 ```r
 precis(h5.1b)
@@ -111,22 +133,41 @@ precis(h5.1b)
 
 ```
 ##        Mean StdDev  5.5% 94.5%
-## a      4.53   0.11  4.36  4.70
-## bs    -0.19   0.11 -0.36 -0.02
+## a      5.07   0.32  4.55  5.58
+## bs    -0.12   0.07 -0.24 -0.01
 ## sigma  1.16   0.08  1.04  1.29
 ```
+
+```r
+G.seq <- 1:10
+pred.data <- data.frame( groupsize=G.seq)
+mu <- link( h5.1b , data=pred.data , n=1e4 )
+```
+
+```
+## [ 1000 / 10000 ][ 2000 / 10000 ][ 3000 / 10000 ][ 4000 / 10000 ][ 5000 / 10000 ][ 6000 / 10000 ][ 7000 / 10000 ][ 8000 / 10000 ][ 9000 / 10000 ][ 10000 / 10000 ]
+```
+
+```r
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI )
+plot( weight ~ groupsize , data=f , col=rangi2 )
+lines( G.seq , mu.mean )
+lines( G.seq , mu.PI[1,] , lty=2 )
+lines( G.seq , mu.PI[2,] , lty=2 )
+```
+
+![plot of chunk unnamed-chunk-1](figure/unnamed-chunk-1-4.png)
 
 ## 5H2: 
 Now fit a multiple linear regression wit hweight as the out come and both area and groupsize as predictor variables. Plot the predictions of the model for each predictor, holding the other predictor constant at its mean. What does this model say about the importance of each variable? Why do you get different results than you got in the exercise just above?
 
-Both values are larger but on opp sides of zero...
-and gives adds a little more varance
 
 ```r
 h5.2 <- map(
     alist(
         weight ~ dnorm( mu , sigma ) ,
-        mu <- a + ba*area.s + bs*groupsize.s ,
+        mu <- a + ba*area + bs*groupsize ,
         a ~ dnorm( 5 , 10) ,
         ba ~ dnorm( 0 , 1 ) ,
         bs ~ dnorm( 0 , 1 ) ,
@@ -138,9 +179,9 @@ precis(h5.2)
 
 ```
 ##        Mean StdDev  5.5% 94.5%
-## a      4.53   0.10  4.36  4.70
-## ba     0.54   0.18  0.25  0.83
-## bs    -0.63   0.18 -0.92 -0.34
+## a      4.47   0.37  3.89  5.06
+## ba     0.59   0.20  0.27  0.90
+## bs    -0.41   0.12 -0.60 -0.23
 ## sigma  1.12   0.07  1.00  1.24
 ```
 
@@ -149,6 +190,50 @@ plot(precis(h5.2))
 ```
 
 ![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-1.png)
+
+```r
+mean.area <- mean(f$area)
+G.seq <- seq(0,10,length.out=100)
+pred.data <- data.frame( groupsize=G.seq, area=mean.area)
+mu <- link( h5.2 , data=pred.data , n=1e4 )
+```
+
+```
+## [ 1000 / 10000 ][ 2000 / 10000 ][ 3000 / 10000 ][ 4000 / 10000 ][ 5000 / 10000 ][ 6000 / 10000 ][ 7000 / 10000 ][ 8000 / 10000 ][ 9000 / 10000 ][ 10000 / 10000 ]
+```
+
+```r
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI )
+plot( weight ~ groupsize , data=f , col=rangi2 )
+lines( G.seq , mu.mean )
+lines( G.seq , mu.PI[1,] , lty=2 )
+lines( G.seq , mu.PI[2,] , lty=2 )
+```
+
+![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-2.png)
+
+```r
+mean.groupsize <- mean(f$groupsize)
+A.seq <- seq(0,6,length.out=100)
+pred.data <- data.frame( groupsize=A.seq, area=mean.groupsize)
+mu <- link( h5.2 , data=pred.data , n=1e4 )
+```
+
+```
+## [ 1000 / 10000 ][ 2000 / 10000 ][ 3000 / 10000 ][ 4000 / 10000 ][ 5000 / 10000 ][ 6000 / 10000 ][ 7000 / 10000 ][ 8000 / 10000 ][ 9000 / 10000 ][ 10000 / 10000 ]
+```
+
+```r
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI )
+plot( weight ~ area , data=f , col=rangi2 )
+lines( A.seq , mu.mean )
+lines( A.seq , mu.PI[1,] , lty=2 )
+lines( A.seq , mu.PI[2,] , lty=2 )
+```
+
+![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-3.png)
 
 ## 5H3
 
@@ -186,7 +271,7 @@ precis(h5.3a)
 ##        Mean StdDev  5.5% 94.5%
 ## a      3.43   0.59  2.48  4.38
 ## bs    -0.45   0.17 -0.72 -0.17
-## bf     1.46   0.78  0.22  2.71
+## bf     1.46   0.78  0.22  2.70
 ## sigma  1.13   0.08  1.01  1.26
 ```
 
@@ -226,3 +311,5 @@ plot(precis(h5.3b))
 ```
 
 ![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3-3.png)
+library(Homo.sapi
+library(ggbio)

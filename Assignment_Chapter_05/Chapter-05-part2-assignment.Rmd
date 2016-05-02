@@ -35,20 +35,31 @@ f$groupsize.s <- (f$groupsize - mean(f$groupsize))/sd(f$groupsize)
 h5.1a <- map(
     alist(
         weight ~ dnorm( mu , sigma ) ,
-        mu <- a + ba*area.s ,
+        mu <- a + ba*area ,
         a ~ dnorm( 5 , 10) ,
         ba ~ dnorm( 0 , 1 ) ,
         sigma ~ dunif( 0 , 10)
 ),  data=f )
 
-plot(precis(h5.1))
-precis(h5.1)
+plot(precis(h5.1a))
+precis(h5.1a)
+
+np.seq <- 0:10 
+pred.data <- data.frame( area=np.seq )
+mu <- link( h5.1a , data=pred.data , n=1e4 ) 
+mu.mean <- apply( mu , 2 , mean ) 
+mu.PI <- apply( mu , 2 , PI )
+plot( weight ~ area , data=f , col=rangi2 ) 
+lines( np.seq , mu.mean ) 
+lines( np.seq , mu.PI[1,] , lty=2 ) 
+lines( np.seq , mu.PI[2,] , lty=2 )
+
 
 
 h5.1b <- map(
     alist(
         weight ~ dnorm( mu , sigma ) ,
-        mu <- a + bs*groupsize.s ,
+        mu <- a + bs*groupsize ,
         a ~ dnorm( 5 , 10) ,
         bs ~ dnorm( 0 , 1 ) ,
         sigma ~ dunif( 0 , 10)
@@ -59,18 +70,27 @@ precis(h5.1b)
 
 
 
+G.seq <- 1:10
+pred.data <- data.frame( groupsize=G.seq)
+mu <- link( h5.1b , data=pred.data , n=1e4 )
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI )
+plot( weight ~ groupsize , data=f , col=rangi2 )
+lines( G.seq , mu.mean )
+lines( G.seq , mu.PI[1,] , lty=2 )
+lines( G.seq , mu.PI[2,] , lty=2 )
+
+
 ```
 
 ## 5H2: 
 Now fit a multiple linear regression wit hweight as the out come and both area and groupsize as predictor variables. Plot the predictions of the model for each predictor, holding the other predictor constant at its mean. What does this model say about the importance of each variable? Why do you get different results than you got in the exercise just above?
 
-Both values are larger but on opp sides of zero...
-and gives adds a little more varance
 ```{r}
 h5.2 <- map(
     alist(
         weight ~ dnorm( mu , sigma ) ,
-        mu <- a + ba*area.s + bs*groupsize.s ,
+        mu <- a + ba*area + bs*groupsize ,
         a ~ dnorm( 5 , 10) ,
         ba ~ dnorm( 0 , 1 ) ,
         bs ~ dnorm( 0 , 1 ) ,
@@ -79,6 +99,32 @@ h5.2 <- map(
 
 precis(h5.2)
 plot(precis(h5.2))
+
+mean.area <- mean(f$area)
+G.seq <- seq(0,10,length.out=100)
+pred.data <- data.frame( groupsize=G.seq, area=mean.area)
+mu <- link( h5.2 , data=pred.data , n=1e4 )
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI )
+plot( weight ~ groupsize , data=f , col=rangi2 )
+lines( G.seq , mu.mean )
+lines( G.seq , mu.PI[1,] , lty=2 )
+lines( G.seq , mu.PI[2,] , lty=2 )
+
+
+
+mean.groupsize <- mean(f$groupsize)
+A.seq <- seq(0,6,length.out=100)
+pred.data <- data.frame( groupsize=A.seq, area=mean.groupsize)
+mu <- link( h5.2 , data=pred.data , n=1e4 )
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI )
+plot( weight ~ area , data=f , col=rangi2 )
+lines( A.seq , mu.mean )
+lines( A.seq , mu.PI[1,] , lty=2 )
+lines( A.seq , mu.PI[2,] , lty=2 )
+
+
 ```
 
 ## 5H3
@@ -128,3 +174,5 @@ h5.3b <- map(
 precis(h5.3b)
 plot(precis(h5.3b))
 ```
+library(Homo.sapi
+library(ggbio)
