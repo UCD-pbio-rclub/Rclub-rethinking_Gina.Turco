@@ -1,0 +1,33 @@
+# Statistical Rethinking Chapter 4 problems
+
+__Name:__Gina Turco
+
+
+# For 05/02/2016
+
+## 5E3. Write down a multiple regression to evaluate the claim: Neither amount of funding nor size of laboratory is by itself a good predictor of time to PhD degree; but together these variables are both positively associated with time to degree. Write down the model definition and indicate which side of zero each slope parameter should be on.
+
+ui= time to PhD degree
+funding and lab size a positive correlated with each other
+
+βF = funding- positive side
+βS = Size - positive side
+μi =α+ βFfi +βSsi
+
+## 5E4. Suppose you have a single categorical predictor with 4 levels (unique values), labeled A, B, C and D. Let Ai be an indicator variable that is 1 where case i is in category A. Also suppose Bi, Ci, and Di for the other categories. Now which of the following linear models are inferentially equivalent ways to include the categorical variable in a regression? Models are inferentially equivalent when it’s possible to compute one posterior distribution from the posterior distribution of another model.
+
+**(1) μi = α+βAAi +βBBi +βDDi**
+(2) μi = α+βAAi +βBBi +βCCi +βDDi
+**(3) μi = α+βBBi +βCCi +βDDi**
+(4) μi = αAAi +αBBi +αCCi +αDDi
+(5) μi = αA(1−Bi −Ci −Di)+αBBi +αCCi +αDDi
+
+
+## 5M5. One way to reason through multiple causation hypotheses is to imagine detailed mechanisms through which predictor variables may influence outcomes. For example, it is sometimes argued that the price of gasoline (predictor variable) is positively associated with lower obesity rates (outcome variable). However, there are at least two important mechanisms by which the price of gas could reduce obesity. First, it could lead to less driving and therefore more exercise. Second, it could lead to less driving, which leads to less eating out, which leads to less consumption of huge restaurant meals. Can you outline one or more multiple regressions that address these two mechanisms? Assume you can have any predictor data you need.
+
+gasoline price (βG) pos correlated with lower obesity rates 
+better predictors: exercise (βE), eating out and more restaurant food (βR)
+
+ui= obesity rates
+**μi = α+βGgi +βEei +βRri**
+This is a spurious association and I can use the  percise outcome to determine which variable is has the largest weight. I can use countrtfactual and residual plots for each variable to make better more robust pridictions on which should variable should be used. I can also plot all correlation graphs to make sure none of the relationships are too correlated and might result in a multicollinear relationship or opp correlation resulting in masking of a variable. I can also used ordinary least squares to determine which combination of variable has the lowest sum of squared residuals. 
