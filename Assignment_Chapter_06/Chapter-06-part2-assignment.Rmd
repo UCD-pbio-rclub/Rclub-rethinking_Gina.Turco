@@ -1,0 +1,61 @@
+Title
+========================================================
+
+## 6M1. Write down and compare the definitions of AIC, DIC, and WAIC. Which of these criteria is most general? Which assumptions are required to transform a more general criterion into a less general one?
+
+
+AIC: Akaike Information Criterion-  sets the out-of sample deviance to the deviance from the training set plus twice the number of free paramters estimated from the model, thus more deviance with more parmaters between samples. To calcaulate the deviance it requaires the use of flat priors and a gaussian distribution for the posterior. 
+
+DIC: This is similar to AIC but does not require the use of flat priors but still requires a guassian distribution for est deviance. 
+
+
+
+WAIC: Is the most general of the three it takes the average of the log-likelihoods over the posterior distrubution to determine the deviance. This is therefore more informativie and does not require a gaussian posterior but  much more computationally intensive.
+
+
+
+
+
+
+## 6M3. When comparing models with an information criterion, why must all models be fit to exactly the same observations? What would happen to the information criterion values, if the models were fit to different numbers of observations? Perform some experiments, if you are not sure.
+
+
+
+## 6M4. What happens to the effective number of parameters,as measured by DIC or WAIC,as a prior becomes more concentrated? Why? Perform some experiments, if you are not sure.
+
+
+## 6M5. Provide an informal explanation of why informative priors reduce overfitting.
+
+The less informative your piors are the more the model relies the data it is given which results in the model represeting one instance of the data rather than something more general which could have been taken into account using the piors.
+
+
+## 6M6. Provide an information explanation of why overly informative priors result in underfitting.
+
+If your piors are too informative than the model does not learn as much from the data and is skwed or narrowed in more on the piors resulting in underfitting of the data.
+
+```{r}
+data(cars)
+
+m <- map(
+    alist(
+        dist ~ dnorm(mu,sigma),
+        mu <- a + b*speed,
+        a ~ dnorm(0,100),
+        b ~ dnorm(0,10),
+        sigma ~ dunif(0,30)
+    ) , data=cars )
+
+post <- extract.samples(m,n=1000)
+
+
+### use the alpha at sample 1 from the extracted sample from postioior dist and   beta value at sample one * all the car speeds the dataset for each post dist sample 1-1000
+### the second line calculated the loglikehood for each valule from the posteior as seen in WAIC
+n_samples <- 1000
+ll <- sapply( 1:n_samples ,
+    
+              function(s) {
+        mu <- post$a[s] + post$b[s]*cars$speed
+        dnorm( cars$dist , mu , post$sigma[s] , log=TRUE )
+})
+
+
