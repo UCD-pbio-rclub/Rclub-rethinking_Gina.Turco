@@ -13,15 +13,19 @@ DIC: This is similar to AIC but does not require the use of flat priors but stil
 WAIC: Is the most general of the three it takes the average of the log-likelihoods over the posterior distrubution to determine the deviance. This is therefore more informativie and does not require a gaussian posterior but  much more computationally intensive.
 
 
+## 6M2. Explain the difference between model selection and model averaging. What information is lost under model selection? What information is lost under model averaging?
 
-
+preserving the uncertainty about models
+model averaged posterior predictions giving weight to each model based on about of predictied deviance
 
 
 ## 6M3. When comparing models with an information criterion, why must all models be fit to exactly the same observations? What would happen to the information criterion values, if the models were fit to different numbers of observations? Perform some experiments, if you are not sure.
 
-
+The larger the number of observations the better the model will fit those observastions. Therefore if the models are not all fit to the same number of observations then it is not a fair comparsion because the models can be diffrent depending on how much information each model is given and the one with more information will end up have the least deviance rather then the model that fits better baised on other criteria. 
 
 ## 6M4. What happens to the effective number of parameters,as measured by DIC or WAIC,as a prior becomes more concentrated? Why? Perform some experiments, if you are not sure.
+
+The effective number of paramters becomes smaller as the prior becomes more informative because the model is relying less the many paramters and more on pior information, where one paramter can now tell/give us more.
 
 
 ## 6M5. Provide an informal explanation of why informative priors reduce overfitting.
@@ -33,29 +37,221 @@ The less informative your piors are the more the model relies the data it is giv
 
 If your piors are too informative than the model does not learn as much from the data and is skwed or narrowed in more on the piors resulting in underfitting of the data.
 
+
+
+
+
+
+
+
+
+
+6H1. Compare the models above, using WAIC. Compare the model rankings, as well as the WAIC weights.
+
 ```{r}
-data(cars)
 
-m <- map(
+
+library(rethinking)
+data(Howell1)
+d <- Howell1
+d$age <- (d$age - mean(d$age))/sd(d$age)
+set.seed( 1000 )
+i <- sample(1:nrow(d),size=nrow(d)/2)
+d1 <- d[ i , ]
+d2 <- d[ -i , ]
+
+```
+
+
+```{r}
+
+m.1 <- map(
     alist(
-        dist ~ dnorm(mu,sigma),
-        mu <- a + b*speed,
-        a ~ dnorm(0,100),
-        b ~ dnorm(0,10),
-        sigma ~ dunif(0,30)
-    ) , data=cars )
-
-post <- extract.samples(m,n=1000)
+        height ~ dnorm(mu,sigma),
+        mu <- a + b1*age
+    ) , data=d1, start=list(a=mean(d1$height),b1=0,sigma=sd(d1$height)))
 
 
-### use the alpha at sample 1 from the extracted sample from postioior dist and   beta value at sample one * all the car speeds the dataset for each post dist sample 1-1000
-### the second line calculated the loglikehood for each valule from the posteior as seen in WAIC
+m.2 <- map(
+    alist(
+        height ~ dnorm(mu,sigma),
+        mu <- a + b1*age + b2*age^2 
+    ) , data=d1, start=list(a=mean(d1$height),b1=0,b2=0,sigma=sd(d1$height))) 
+
+
+m.3 <- map(
+    alist(
+        height ~ dnorm(mu,sigma),
+        mu <- a + b1*age + b2*age^2 + b3*age^3 
+    ) , data=d1, start=list(a=mean(d1$height),b1=0,b2=0,b3=0, sigma=sd(d1$height))) 
+
+
+m.4 <- map(
+    alist(
+        height ~ dnorm(mu,sigma),
+        mu <- a + b1*age + b2*age^2 + b3*age^3 +  b4*age^4
+    ) , data=d1, start=list(a=mean(d1$height),b1=0,b2=0,b3=0,b4=0, sigma=sd(d1$height))) 
+
+m.5 <- map(
+    alist(
+        height ~ dnorm(mu,sigma),
+        mu <- a + b1*age + b2*age^2 + b3*age^3 +  b4*age^4 + b5*age^5
+    ) , data=d1, start=list(a=mean(d1$height),b1=0,b2=0,b3=0,b4=0, b5=0, sigma=sd(d1$height))) 
+
+m.6 <- map(
+    alist(
+        height ~ dnorm(mu,sigma),
+        mu <- a + b1*age + b2*age^2 + b3*age^3 +  b4*age^4 + b5*age^5 + b6*age^6
+    ) , data=d1, start=list(a=mean(d1$height),b1=0,b2=0,b3=0,b4=0, b5=0,b6=0, sigma=sd(d1$height)))
+
+
+
+````
+
+## 6H1. Compare the models above, using WAIC. Compare the model rankings, as well as the WAIC weights.
+
+```{r}
+
+coeftab(m.1,m.2,m.3,m.4,m.5)
+plot(coeftab(m.1,m.2,m.3,m.4,m.5))
+WAIC(m.1)
+
+age.models <- compare(m.1,m.2,m.3,m.4,m.5)
+age.models
+plot( age.models , SE=TRUE , dSE=TRUE )
+
+```
+
+
+6H2. For each model,produce a plot with model averaged mean and 97% confidence interval of the mean, superimposed on the raw data. How do predictions differ across models?
+
+
+```{r}
+
+age.seq <- seq(from=-2,to=3,length.out=30)
+d.predict <- list(
+height = rep(0,30), # empty outcome
+age = age.seq    # sequence of neocortex
+      )
+
+counterfactual_predictions <- function(model, predict_data) {
+     pred.m <- link( model , data=predict_data )
+     mu <- apply( pred.m , 2 , mean )
+     mu.PI <- apply( pred.m , 2 , PI)
+     # plot it all
+     plot( height ~ age , d1 , col=rangi2 )
+     lines( age.seq , mu , lty=2 )
+     lines( age.seq , mu.PI[1,] , lty=2 )
+     lines( age.seq , mu.PI[2,] , lty=2 )
+}
+
+counterfactual_predictions(m.1,d.predict)
+counterfactual_predictions(m.2,d.predict)
+counterfactual_predictions(m.3,d.predict)
+counterfactual_predictions(m.4,d.predict)
+counterfactual_predictions(m.5,d.predict)
+counterfactual_predictions(m.6,d.predict)
+
+
+```
+
+
+6H3. Now also plot the model averaged predictions, across all models. In what ways do the averaged predictions differ from the predictions of the model with the lowest WAIC value?
+
+
+```{r}
+
+h.ensemble <- ensemble( m.1 , m.2 , m.3 , m.4, m.5 , m.6, data=d.predict )
+mu <- apply( h.ensemble$link , 2 , mean )
+mu.PI <- apply( h.ensemble$link , 2 , PI )
+lines( age.seq , mu )
+shade( mu.PI , age.seq )
+
+
+```
+
+
+6H4. Compute the test-sample deviance for each model. This means calculating deviance, but using the data in d2 now. You can compute the log-likelihood of the height data with:
+
+```{r}
+
+post <- extract.samples(m.1,n=1000)
+
 n_samples <- 1000
 ll <- sapply( 1:n_samples ,
-    
-              function(s) {
-        mu <- post$a[s] + post$b[s]*cars$speed
-        dnorm( cars$dist , mu , post$sigma[s] , log=TRUE )
+    function(s) {
+        mu <- post$a[s] + post$b[s]*d2$age
+        dnorm( d2$height  , mu , post$sigma[s] , log=TRUE )
 })
+
+n_cases <- nrow(d2)
+sum(lppd)
+
+
+```
+where mu is a vector of predicted means (based upon age values and MAP parameters) and sigma is the MAP standard deviation.
+
+
+6H5. Compare the deviances from 6H4 to the WAIC values. It might be easier to compare if you subtract the smallest value in each list from the others. For example, subtract the minimum WAIC from all of the WAIC values so that the best WAIC is normalized to zero. Which model makes the best out-of-sample predictions in this case? Does WAIC do a good job of estimating the test deviance?
+
+
+6H6. Consider the following model:
+
+```{r}
+
+## First, fit this model to the data in d1. 
+
+m.7 <- map(
+    alist(
+        height ~ dnorm(mu,sigma),
+        mu <- a + b1*age + b2*age^2 + b3*age^3 +  b4*age^4 + b5*age^5 + b6*age^6,
+        b1 ~ dnorm(0, 5),
+        b2 ~ dnorm(0, 5),
+        b3 ~ dnorm(0, 5),
+        b4 ~ dnorm(0, 5),
+        b5 ~ dnorm(0, 5),
+        b6 ~ dnorm(0, 5)
+    ) , data=d1, start=list(a=mean(d1$height), sigma=sd(d1$height)))
+
+## Report the MAP estimates 
+
+m.7
+
+## plot the implied predictions.
+counterfactual_predictions(m.7,d2)
+mu <- apply( p , 2 , mean )
+mu.PI <- apply( p , 2 , PI )
+# plot it all
+plot( height ~ age , d2 , col=rangi2 )
+lines( d2$age , mu , lty=2 )
+lines( d2$age , mu.PI[1,] , lty=2 )
+lines( d2$age , mu.PI[2,] , lty=2 )
+## compute the out-of-sample deviance using the data in d2, using MAP estimates from the model fit to d1 only. 
+
+
+post <- extract.samples(m.7,n=1000)
+n_samples <- 1000
+ll <- sapply( 1:n_samples ,
+    function(s) {
+        mu <- post$a[s] + post$b1[s]*d2$age + post$b2[s]*d2$age^2 + post$b3[s]*d2$age^3 + post$b4[s]*d2$age^4 + post$b5[s]*d2$age^5 + post$b6[s]*d2$age^6
+        dnorm( d2$height  , mu , post$sigma[s] , log=TRUE )
+})
+
+n_cases <- nrow(d2)
+lppd <- sapply( 1:n_cases , function(i) log_sum_exp(ll[i,]) - log(n_samples) )
+sum(lppd)
+
+WAIC(m.7)
+
+```
+
+WAIC on D1 = -958.21
+WAIC on D2 = -938.6573
+
+```{r}
+#compare to the best WAIC model from earlier?
+age.models <- compare(m.1,m.2,m.3,m.4,m.5,m.6,m.7)
+age.models
+```
 
 
