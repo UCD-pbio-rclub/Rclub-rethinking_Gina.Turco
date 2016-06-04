@@ -1,0 +1,349 @@
+---
+title: "chap7_1"
+output: html_document
+---
+
+Interaction: the importance of one predictor depends on another predictor, a kind of conditioning that allows paramters to be condtional on futher aspects of the data
+
+
+## 7E1. For each of the causal relationships below, name a hypothetical third variable that would lead
+to an interaction effect.
+
+(1) Bread dough rises because of yeast. Other ingridiants like backing soda
+
+(2) Education leads to higher income. Type of education what their major is,  or place 
+
+(3) Gasoline makes a car go. Type of car (Eletric cars), type of gasoline
+
+
+
+## 7E2. Which of the following explanations invokes an interaction?
+
+
+**(1) Caramelizing onions requires cooking over low heat and making sure the onions do not dry out.**
+
+(2) A car will go faster when it has more cylinders or when it has a better fuel injector.
+
+(3) Most people acquire their political beliefs from their parents,unless they get them instead from their friends.
+
+(4) Intelligent animal species tend to be either highly social or have manipulative appendages (hands, tentacles, etc.).
+
+
+## 7E3. For each of the explanations in 7E2, write a linear model that expresses the stated relationship.
+
+
+(1) Caramelizing onions requires cooking over low heat and making sure the onions do not dry out.
+
+```{r}
+Caramelized~ dnorm(mu,sigma),
+        mu <- a + bH*heat + bD*dryness + bD*heat
+```        
+        
+(2)  A car will go faster when it has more cylinders or when it has a better fuel injector
+
+```{r}
+speed ~ dnorm(mu,sigma),
+        mu <- a + bC*cylinder_number + bF*fuel_injector 
+```
+(3) Most people acquire their political beliefs from their parents,unless they get them instead from their friends.
+
+```{r}
+political_beliefs  ~ dnorm(mu,sigma),
+        mu <- a + bP*parents + bF*friends
+```        
+
+(4) Intelligent animal species tend to be either highly social or have manipulative appendages (hands, tentacles, etc.)
+
+```{r}
+Intelligence  ~ dnorm(mu,sigma),
+        mu <- a + bS*social + bA*appendages
+```
+
+### Medium.
+
+## 7M1. Recall the tulips example from the chapter. Suppose another set of treatments adjusted the temperature in the greenhouse over two levels: cold and hot. The data in the chapter were collected at the cold temperature. You find none of the plants grown under the hot temperature developed any blooms at all, regardless of the water and shade levels. Can you explain this result in terms of interactions between water, shade, and temperature?
+
+Hot temperature whould cause the water to evaporate and likely less water, higher temperatures arealso likely due to higher light levels leading to less shade leading to again less water. Together hot temperatures interact wuih both water and shade.  
+
+
+## 7M2. Can you invent a regression equation that would make the bloom size zero, whenever the temperature is hot?
+
+
+```{r}
+heat = 0 
+cold = 1
+
+blooms ~ dnorm( mu , sigma ) 
+mu <- a + bW*water + bS*shade + bH*cold +  bWHS*water*cold*shade
+
+```
+
+## 7M3. In parts of North America, ravens depend upon wolves for their food. This is because ravens are carnivorous but cannot usually kill or open carcasses of prey. Wolves however can and do kill and tear open animals, and they tolerate ravens co-feeding at their kills. This species relationship is generally described as a “species interaction.” Can you invent a hypothetical set of data on raven population size in which this relationship would manifest as a statistical interaction? Do you think the biological interaction could be linear? Why or why not?
+
+
+There will be more ravins alive when they are cofeeding with wolfs at somepoint tho this interaction should become steady-state because if there are too many ravins feeding with the wolfs they will eat all the wolfs food and the wolfs will die off. 
+
+## 7H1. Return to the data(tulips) example in the chapter. Now include the bed variable as a predictor in the interaction model. Don’t interact bed with the other predictors; just include it as a main effect. Note that bed is categorical. So to use it properly, you will need to either construct dummy variables or rather an index variable, as explained in Chapter 6.
+
+
+```{r}
+
+library(rethinking)
+data(tulips)
+d <- tulips
+str(d)
+
+### center data
+d$shade.c <- d$shade - mean(d$shade)
+d$water.c <- d$water - mean(d$water)
+
+
+## cat data do we really need a column for each one...
+
+d$bed.a <- ifelse( d$bed=="a" , 1 , 0 ) 
+d$bed.b <- ifelse( d$bed=="b" , 1 , 0 ) 
+d$bed.c <- ifelse( d$bed=="c" , 1 , 0 ) 
+
+
+m8.0 <- map(
+    alist(
+        blooms ~ dnorm( mu , sigma ) ,
+        mu <- a + bW*water.c + bS*shade.c  + bA*bed.a + bB*bed.b + bC*bed.c + bWS*water.c*shade.c ,
+        a ~ dnorm( 130 , 100 ) ,
+        bW ~ dnorm( 0 , 100 ) ,
+        bS ~ dnorm( 0 , 100 ) ,
+        bWS ~ dnorm( 0 , 100 ) ,
+        bA ~ dnorm(0,1),
+        bB ~ dnorm(0,1),
+        bC ~ dnorm(0,1),
+        sigma ~ dunif( 0 , 100 )
+),
+data=d , start=list(a=mean(d$blooms),bW=0,bS=0,bWS=0,sigma=sd(d$blooms)) )
+
+
+```
+
+
+
+
+
+7H2. Use WAIC to compare the model from 7H1 to a model that omits bed. What do you infer from this comparison? Can you reconcile the WAIC results with the posterior distribution of the bed coefficients?
+
+```{r}
+
+m7.9 <- map(
+    alist(
+        blooms ~ dnorm( mu , sigma ) ,
+        mu <- a + bW*water.c + bS*shade.c  + bWS*water.c*shade.c ,
+        a ~ dnorm( 130 , 100 ) ,
+        bW ~ dnorm( 0 , 100 ) ,
+        bS ~ dnorm( 0 , 100 ) ,
+        bWS ~ dnorm( 0 , 100 ) ,
+        sigma ~ dunif( 0 , 100 )
+),
+data=d , start=list(a=mean(d$blooms),bW=0,bS=0,bWS=0,sigma=sd(d$blooms)) )
+
+
+models <- compare(m7.9,m8.0)
+### 7.9 has a slightly smaller WAIC, .7 very strong evd that best model....
+plot( models , SE=TRUE , dSE=TRUE )
+
+## post of bed 
+
+
+````
+
+
+
+7H3. Consider again the data(rugged) data on economic development and terrain ruggedness, examined in this chapter. One of the African countries in that example, Seychelles, is far outside the cloud of other nations, being a rare country with both relatively high GDP and high ruggedness. Seychelles is also unusual, in that it is a group of islands far from the coast of mainland Africa, and its main economic activity is tourism.
+One might suspect that this one nation is exerting a strong influence on the conclusions. In this problem, I want you to drop Seychelles from the data and re-evaluate the hypothesis that the relationship of African economies with ruggedness is different from that on other continents.
+
+
+```{r}
+### load and drop data
+
+library(rethinking)
+data(rugged)
+d <- rugged
+# make log version of outcome
+#gross domestic product
+d$log_gdp <- log( d$rgdppc_2000 )
+# extract countries with GDP data
+dd <- d[ complete.cases(d$rgdppc_2000) , ]
+ds <- dd[ dd$country!="Seychelles" , ]
+```
+
+(a) Begin by using map to fit just the interaction model: 
+yi ∼ Normal(μi, σ)
+μi = α+βAAi +βRRi +βARAiRi
+
+where y is log GDP per capita in the year 2000 (log of rgdppc_2000); A is cont_africa, the dummy variable for being an African nation; and R is the variable rugged. Choose your own priors. Compare the inference from this model fit to the data without Seychelles to the same model fit to the full data.
+
+```{r}
+### without Seychelles
+m8.1 <- map(
+    alist(
+        log_gdp ~ dnorm( mu , sigma ) ,
+        mu <- a + bA*cont_africa + bR*rugged + bAR*cont_africa*rugged,
+        a ~ dnorm( 8 , 100 ) ,
+        bA ~ dnorm( 0 , 1 ) ,
+        bR ~ dnorm( 0 , 1 ) ,
+        bAR ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 10 )
+), data=ds )
+
+### all
+m8.1b <- map(
+    alist(
+        log_gdp ~ dnorm( mu , sigma ) ,
+        mu <- a + bA*cont_africa + bR*rugged + bAR*cont_africa*rugged,
+        a ~ dnorm( 8 , 100 ) ,
+        bA ~ dnorm( 0 , 1 ) ,
+        bR ~ dnorm( 0 , 1 ) ,
+        bAR ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 10 )
+), data=dd )
+
+m8.1
+m8.1b
+
+
+```
+
+
+Does it still seem like the effect of ruggedness depends upon continent? How much has the expected relationship changed?
+
+The two models differ less in the weight put on ruggedness and more in the weight put on africa or not africa as expected the model with all the data puts more weight on the continents. 
+
+
+
+(b) Now plot the predictions of the interaction model, with and without Seychelles. Does it still seem like the effect of ruggedness depends upon continent? How much has the expected relationship changed?
+The expected relashipship does not change from the plots shown in figure 7.4 where seychelles is included in the model
+
+```{r}
+
+rugged.seq <- seq(from=-1,to=8,by=0.25)
+mu.Africa <- link( m8.1 , data=data.frame(cont_africa=1,rugged=rugged.seq) )
+mu.Africa.mean <- apply( mu.Africa , 2 , mean )
+mu.Africa.PI <- apply( mu.Africa , 2 , PI , prob=0.97 )
+mu.NotAfrica <- link( m8.1 , data=data.frame(cont_africa=0,rugged=rugged.seq) )
+mu.NotAfrica.mean <- apply( mu.NotAfrica , 2 , mean )
+mu.NotAfrica.PI <- apply( mu.NotAfrica , 2 , PI , prob=0.97 )
+# plot African nations with regression
+d.A1 <- ds[ds$cont_africa==1,]
+plot( log(rgdppc_2000) ~ rugged , data=d.A1 ,
+    col=rangi2 , ylab="log GDP year 2000" ,
+    xlab="Terrain Ruggedness Index" )
+mtext( "African nations" , 3 )
+lines( rugged.seq , mu.Africa.mean , col=rangi2 )
+
+shade( mu.Africa.PI , rugged.seq , col=col.alpha(rangi2,0.3) )
+# plot non-African nations with regression
+d.A0 <- dd[dd$cont_africa==0,]
+plot( log(rgdppc_2000) ~ rugged , data=d.A0 ,
+    col="black" , ylab="log GDP year 2000" ,
+    xlab="Terrain Ruggedness Index" )
+mtext( "Non-African nations" , 3 )
+lines( rugged.seq , mu.NotAfrica.mean )
+shade( mu.NotAfrica.PI , rugged.seq )
+
+```
+
+
+
+(c) Finally, conduct a model comparison analysis, using WAIC. Fit three models to the data with- out Seychelles:
+Model 1 : yi ∼ Normal(μi, σ) μi =α+βRRi
+Model 2 : yi ∼ Normal(μi, σ) μi = α + βAAi + βRRi
+Model 3 : yi ∼ Normal(μi, σ) μi = α+βAAi +βRRi +βARAiRi
+
+```{r}
+
+### without Seychelles
+m8.2a <- map(
+    alist(
+        log_gdp ~ dnorm( mu , sigma ) ,
+        mu <- a + bR*rugged,
+        a ~ dnorm( 8 , 100 ) ,
+        bR ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 10 )
+), data=ds )
+
+
+
+m8.2b <- map(
+    alist(
+        log_gdp ~ dnorm( mu , sigma ) ,
+        mu <- a + bA*cont_africa + bR*rugged,
+        a ~ dnorm( 8 , 100 ) ,
+        bA ~ dnorm( 0 , 1 ) ,
+        bR ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 10 )
+), data=ds )
+
+
+
+m8.2c <- map(
+    alist(
+        log_gdp ~ dnorm( mu , sigma ) ,
+        mu <- a + bA*cont_africa + bR*rugged + bAR*cont_africa*rugged,
+        a ~ dnorm( 8 , 100 ) ,
+        bA ~ dnorm( 0 , 1 ) ,
+        bR ~ dnorm( 0 , 1 ) ,
+        bAR ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 10 )
+), data=ds )
+
+compare(m8.2a,m8.2b,m8.2c)
+
+```
+
+Model 3 is the best model based on WAIC model comparison. 
+ Plot the model-averaged predictions of this model set. Do your inferences differ from those in (b)? Why or why not?
+
+```{r}
+
+
+rugged.seq <- seq(from=-1,to=8,by=0.25)
+d.predict <- list(
+    cont_africa=rep(0,37),
+    rugged = rugged.seq,
+    log_gdp = rep(8.5,37) # empty outcome
+)
+
+
+africa.ensemble <- ensemble( m8.2a , m8.2b , m8.2c , data=d.predict )
+# summarize
+mu <- apply( africa.ensemble$link , 2 , mean )
+mu.PI <- apply( africa.ensemble$link , 2 , PI )
+
+# plot it all
+plot( log_gdp ~ rugged , d , col=rangi2 )
+lines( rugged.seq , mu )
+shade( mu.PI , rugged.seq )
+
+```
+
+a little more varance for the not africa case when using all models.. 
+
+
+
+## 7H4. The values in data(nettle) are data on language diversity in 74 nations.115 The meaning of each column is given below.
+(1) country: Name of the country
+(2) num.lang: Number of recognized languages spoken
+(3) area: Area in square kilometers
+(4) k.pop: Population, in thousands
+(5) num.stations: Number of weather stations that provided data for the next two columns (6) mean.growing.season: Average length of growing season, in months
+(7) sd.growing.season: Standard deviation of length of growing season, in months
+Use these data to evaluate the hypothesis that language diversity is partly a product of food se- curity. The notion is that, in productive ecologies, people don’t need large social networks to buffer them against risk of food shortfalls. This means ethnic groups can be smaller and more self-sufficient, leading to more languages per capita. In contrast, in a poor ecology, there is more subsistence risk, and so human societies have adapted by building larger networks of mutual obligation to provide food insurance. This in turn creates social forces that help prevent languages from diversifying.
+Specifically, you will try to model the number of languages per capita as the outcome variable:
+
+```{r}
+d$lang.per.cap <- d$num.lang / d$k.pop
+```
+
+Use the logarithm of this new variable as your regression outcome. (A count model would be better here, but you’ll learn those later, in Chapter 10.)
+This problem is open ended, allowing you to decide how you address the hypotheses and the uncertain advice the modeling provides. If you think you need to use WAIC anyplace, please do. If you think you need certain priors, argue for them. If you think you need to plot predictions in a certain way, please do. Just try to honestly evaluate the main effects of both mean.growing.season and sd.growing.season, as well as their two-way interaction, as outlined in parts (a), (b), and (c) below. If you are not sure which approach to use, try several.
+
+(a) Evaluate the hypothesis that language diversity, as measured by log(lang.per.cap), is pos- itively associated with the average length of the growing season, mean.growing.season. Consider log(area) in your regression(s) as a covariate (not an interaction). Interpret your results.
+(b) Now evaluate the hypothesis that language diversity is negatively associated with the stan- dard deviation of length of growing season, sd.growing.season. This hypothesis follows from uncertainty in harvest favoring social insurance through larger social networks and therefore fewer languages. Again, consider log(area) as a covariate (not an interaction). Interpret your results.
+(c) Finally, evaluate the hypothesis that mean.growing.season and sd.growing.season in- teract to synergistically reduce language diversity. The idea is that, in nations with longer average growing seasons, high variance makes storage and redistribution even more important than it would be otherwise. That way, people can cooperate to preserve and protect windfalls to be used during the droughts. These forces in turn may lead to greater social integration and fewer languages.
