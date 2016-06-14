@@ -1,0 +1,49 @@
+---
+title: "Chapter-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+num_weeks <- 1e5
+positions <- rep(0,num_weeks) ### all postions are zero
+current <- 10
+for ( i in 1:num_weeks ) {
+    # for i in onther through 1000 weeks
+    positions[i] <- current
+    ## the position at that week is equal to current first week is 10
+    proposal <- current + sample( c(-1,1) , size=1 )
+    ### choose either 1 or -1 50:50 and add or subtract currecnt
+    
+    
+    # This makes sure islands on extreme ends are taken into account
+    if ( proposal < 1 ) proposal <- 10
+    if ( proposal > 10 ) proposal <- 1
+    
+    
+    # prob to move is based on ratio to island size... 9 and 10 for example are 1.1 prob or .9.
+    ## if prob is 1.1 will it move for sure.. over 100%?
+    prob_move <- proposal/current
+    ### Finally, a random number between zero and one is generated (runif(1)), and the king moves, if this random number is less than the ratio of the proposal island’s population to the current island’s population
+    current <- ifelse( runif(1) < prob_move , proposal , current )
+    
+    #### so this is somewhat random...
+}
+```
+
+### 8E1. Which of the following is a requirement of the simple Metropolis algorithm?
+(1) The parameters must be discrete.
+
+(2) The likelihood function must be Gaussian.
+
+**(3) The proposal distribution must be symmetric.**
+
+### 8E2. Gibbs sampling is more efficient than the Metropolis algorithm. How does it achieve this extra efficiency? Are there any limitations to the Gibbs sampling strategy?
+
+Uses asymmetric proposals where Paramter values adjust intelligently depending on the parameter at the moment.Conjugate pairs are analytical solutions for the posterior based on  distributions of an indivdual paramter made from priors. This can be used to sample the postoior better. If there are many paramters this becomes inefficient.
+
+
+### 8E3. Which sort of parameters can Hamiltonian Monte Carlo not handle? Can you explain why?
+
+HMC does not handel discrete parameters well because it is measuring a change in the values for the parameters and thefore needs continuous variables. 
+
+
