@@ -39,7 +39,11 @@ for ( i in 1:num_weeks ) {
 
 ### 8E2. Gibbs sampling is more efficient than the Metropolis algorithm. How does it achieve this extra efficiency? Are there any limitations to the Gibbs sampling strategy?
 
-Uses asymmetric proposals where Paramter values adjust intelligently depending on the parameter at the moment.Conjugate pairs are analytical solutions for the posterior based on  distributions of an indivdual paramter made from priors. This can be used to sample the postoior better. If there are many paramters this becomes inefficient.
+Uses asymmetric proposals where Paramter values adjust intelligently depending on the parameter at the moment.
+
+Conjugate pairs are analytical solutions for the posterior based on  distributions of an indivdual paramter made from priors. 
+
+This can be used to sample the postoior better. If there are many paramters this becomes inefficient.
 
 
 ### 8E3. Which sort of parameters can Hamiltonian Monte Carlo not handle? Can you explain why?
