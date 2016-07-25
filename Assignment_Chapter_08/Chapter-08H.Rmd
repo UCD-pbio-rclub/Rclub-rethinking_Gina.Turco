@@ -1,5 +1,12 @@
-Run the model below and then inspect the posterior distribution and explain what it is 
-accomplishing.
+---
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+
+
+## Run the model below and then inspect the posterior distribution and explain what it is accomplishing.
 
 
 ```{r}
@@ -317,9 +324,4 @@ ggplot(data.frame(water_results), aes(water)) +
 
 ```
 
-```{r, include=FALSE}
-   # add this chunk to end of mycode.rmd
-   file.rename(from="/Users/gturco/Documents/code/Rclub-rethinking_Gina.Turco/Assignment_Chapter_08/Chapter-08H.Rmd", 
-               to="/Users/gturco/Documents/code/Rclub-rethinking_Gina.Turco/Assignment_Chapter_08/Chapter-08H.md")
-```
 
