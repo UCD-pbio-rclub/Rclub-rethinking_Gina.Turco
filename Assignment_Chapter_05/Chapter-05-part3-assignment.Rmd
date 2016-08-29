@@ -14,13 +14,18 @@ funding and lab size a positive correlated with each other
 βS = Size - positive side
 μi =α+ βFfi +βSsi
 
+
+μi =α+ βFfi
+μi =α+ βSsi
+
+
 ## 5E4. Suppose you have a single categorical predictor with 4 levels (unique values), labeled A, B, C and D. Let Ai be an indicator variable that is 1 where case i is in category A. Also suppose Bi, Ci, and Di for the other categories. Now which of the following linear models are inferentially equivalent ways to include the categorical variable in a regression? Models are inferentially equivalent when it’s possible to compute one posterior distribution from the posterior distribution of another model.
 
 **(1) μi = α+βAAi +βBBi +βDDi**
 (2) μi = α+βAAi +βBBi +βCCi +βDDi
 **(3) μi = α+βBBi +βCCi +βDDi**
-(4) μi = αAAi +αBBi +αCCi +αDDi
-(5) μi = αA(1−Bi −Ci −Di)+αBBi +αCCi +αDDi
+**(4) μi = αAAi +αBBi +αCCi +αDDi**
+**(5) μi = αA(1−Bi −Ci −Di)+αBBi +αCCi +αDDi**
 
 
 ## 5M5. One way to reason through multiple causation hypotheses is to imagine detailed mechanisms through which predictor variables may influence outcomes. For example, it is sometimes argued that the price of gasoline (predictor variable) is positively associated with lower obesity rates (outcome variable). However, there are at least two important mechanisms by which the price of gas could reduce obesity. First, it could lead to less driving and therefore more exercise. Second, it could lead to less driving, which leads to less eating out, which leads to less consumption of huge restaurant meals. Can you outline one or more multiple regressions that address these two mechanisms? Assume you can have any predictor data you need.

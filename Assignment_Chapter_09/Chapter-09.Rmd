@@ -17,12 +17,34 @@ Do a Bayesian analysis of hypocotyl length (hyp) in the attached data sheet.
 
 ```{r}
 library("rethinking")
+library("ggplot")
+library("reshape")
 
 d = read.csv("/Users/gturco/Documents/code/Rclub-rethinking_Gina.Turco/Assignment_Chapter_09/TomatoR2CSHL.csv",header=TRUE)
 
 
-d$trt.h <- ifelse( d$trt=="H" , 1 , 0 )
+### first look at the data does it look how we cant it to look
+head(d)
+### how is it cat the data does it think it is numeric, flat for example is not a factor as trtment is.. also check if things where inported at lowercase or upercase. Also see if any missing data point
+summary(d)
 
+
+ggplot(data=d,aes(x=hyp,fill=trt)) + geom_density() + facet_grid(species~trt)
+ggplot(data=d,aes(y=hyp,x=species,fill=trt)) + geom_boxplot() 
+
+
+### transform data the does not have long tails....
+### tells which are normal and which are not normal for hight and low for trt and species seperated
+by(d$hyp,list(d$trt,d$species),shapiro.test)
+
+### repeat for proposed transformation
+by(sqrt(d$hyp),list(d$trt,d$species),shapiro.test)
+### sqrt  helps and makes the data more normal 
+by(log2(d$hyp),list(d$trt,d$species),shapiro.test)
+
+d$trt.l <- ifelse( d$trt=="L" , 1 , 0 )
+d$trt.l2 <- as.numeric(d$trt) -1
+levels(d$trt)
 
 CHS.trt <- map(
     alist(
@@ -37,31 +59,72 @@ precis(CHS.trt)
 plot(precis(CHS.trt))
 
 
+d$species <- as.numeric(d$species) -1
 
-d$species.chmiel <- ifelse( d$species=="S. chmielewskii" , 1 , 0 )
-d$species.hab <- ifelse( d$species=="S. habrochaites" , 1 , 0 )
-d$species.penn <- ifelse( d$species=="S. pennellii" , 1 , 0 )
-d$species.per <- ifelse( d$species=="S. peruvianum" , 1 , 0 )
+data = d
+data.species <- data[,c("hyp","species")]
+data.species$id <- 1:nrow(data.species)
 
+### what do you want to be in each row ~ what do you want the rest of the collems to be, lengths gives us zeros or ones depending on which vaule it is.. need id/index so that it doesnt combine simlar values into a singel row.
+data.species <- dcast(data.species, hyp + id ~ species, value.var="species", fun.aggregate = length)
+colnames(data.species) <- sub(". ","_",fixed = TRUE, colnames(data.species))
 
+### need to make smaller so that it can go into map2san use only what we want
+data2.trt -> data2[,c("hyp","trt2")]
 
-CHS.species <- map(
+trt.stan <- map2stan(
     alist(
         hyp ~ dnorm( mu , sigma ) ,
-        mu <- a + bP*species.penn + bR*species.per + bH*species.hab + bC*species.chmiel  ,
-        a ~ dnorm( 33 , 10 ) ,
-        bP ~ dnorm( 0 , 1 ) ,
-        bR ~ dnorm( 0 , 1 ) ,
-        bH ~ dnorm( 0 , 1 ) ,
-        bC ~ dnorm( 0 , 1 ) ,
+        mu <- a + bT*trt.h  ,
+        a ~ dnorm( 0 , 100 ) ,
+        bT ~ dnorm( 0 , 10 ) ,
         sigma ~ dunif( 0 , 10 )
 ) , data = d ) 
 
-precis(CHS.species)
-plot(precis(CHS.species))
+precis(trt.stan)
+plot(trt.stan)
+par(mfrow=c(1,1),mfcol=c(1,1))
+plot(precis(hyp.stan)) 
 
 
+#### species
+colnames(data2) <- sub(". ","_",colnames(data2))
+data2.species.all <- data2[,c(2,4,8)]
 
+
+species.stan <- map2stan(
+        alist(
+        hyp ~ dnorm( mu , sigma ) ,
+        mu <- bA*chilense + bP*pennellii + bR*peruvianum + bH*habrochaites + bC*chmielewskii,
+        c(bP,bR,bH,bC) ~ dnorm( 33.35, 20 ),
+        sigma ~ dunif( 0 , 10 )
+) , data = d ) 
+
+### new data frame 
+
+species2.stan <- map2stan(
+        alist(
+        hyp ~ dnorm( mu , sigma ) ,
+        mu <- bP*pennellii + bR*peruvianum + bH*habrochaites + bC*chmielewskii,
+        c(bP,bR,bH,bC) ~ dnorm( 0, 10 ),
+        sigma ~ dunif( 0 , 10 )
+) , data = d ) 
+
+precis(species.stan)
+plot(precis(species.stan))
+
+compare(species.stan,species2.stan,trt.stan)
+### having treatment and species really helps
+### also plot the compare function look back at the book to see what this is
+
+coeftab(species.stan,species2.stan,trt.stan)
+
+### how diffrence are these...
+
+post.bt<- extract.samples(species.trt.stan)$bt
+
+
+### try fitting with sqrt and see how they compare....
 
 
 #CHS. <- map2stan(

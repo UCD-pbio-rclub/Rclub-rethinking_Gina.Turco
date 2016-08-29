@@ -11,6 +11,7 @@ posterior <- posterior / sum(posterior)
 set.seed(100)
 samples <- sample( p_grid , prob=posterior , size=1e4 , replace=TRUE )
 
+
 ```
               
 
@@ -202,6 +203,7 @@ The model assumes that sex of first and second births are independent. To check 
 number_of_girls_born_first= 100-sum(birth1)
 boys_after_girls= sum(birth2[which(birth1 == 0)])
 number_of_girls_born_first = 49
+subset()
 
 girls <- rbinom( 1e4 , size=number_of_girls_born_first , prob=samples )
 table(girls)[39]/1e4

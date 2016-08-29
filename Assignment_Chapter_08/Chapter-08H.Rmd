@@ -3,7 +3,7 @@ output:
   html_document: 
     keep_md: yes
 ---
-
+### can motify setting so not as much reporting
 
 
 ## Run the model below and then inspect the posterior distribution and explain what it is accomplishing.
@@ -43,6 +43,7 @@ ggplot(vars.m, aes(value, fill=L1)) + geom_density(alpha=.2) + facet_grid(L1 ~ .
 
 ```
 
+can also use log scale to get a better picture of what is doing.
 
 Compare the samples for the parameters a and b. Can you explain the different trace plots, using what you know about the Cauchy distribution?
 
@@ -140,7 +141,7 @@ compare(m5.1,m5.2,m5.3)
 ```
 
 
-The weights and the ranking stayed the same when using stan verse using not using stan. Yet the devation between models varied more when not using stan for each of the models most likely because stan is using the data to predict the model rather than us telling assuming what the model should be. Because we are using the same data for all three models we expect there to be less varance when we are using the data to build a model.
+The weights and the ranking stayed the same when using stan verse using not using stan. Yet the devation between models varied more when not using stan for each of the models most likely because stan is using the data to predict the model rather than us telling assuming what the model should be. Because we are using the same data for all three models we expect there to be less varance when we are using the data to build a model. Predict better outputs for stan slightly lower pWAIC score.
 
 
 ##8H3. Sometimes changing a prior for one parameter has unanticipated effects on other parameters. This is because when a parameter is highly correlated with another parameter in the posterior, the prior influences both parameters. Here’s an example to work and think through. Go back to the leg length example in Chapter 5. Here is the code again, which simulates height and leg lengths for 100 imagined individuals:
@@ -237,6 +238,9 @@ when we change the proir this also changes bl values br values because these are
 compare(m5.8s,m5.8s2)
 WAIC(m5.8s)
 
+compare(m5.8s,m5.8s2,func=DIC)
+
+
 ```
 
 this suggests that the two models are very similar in their WAIC scores, the pWAIC is the effective number of paramters the second model containing only postive paramters for br and thus only neg brs requires less paramters and is more flexible. This might be because it makes it easier for stan to make preidictions if br is postive it can also make pridictions for bl.
@@ -282,6 +286,8 @@ ggplot(data.frame(island_vists), aes(islands)) +
 ### population <- c(10,1,2,3,5,7,6,8,9,4)
 
 ```
+
+can use randomize code to get new sizes....
 
 
 #8H6. Modify the Metropolis algorithm code from the chapter to write your own simple MCMC estimator for globe tossing data and model from Chapter 2.

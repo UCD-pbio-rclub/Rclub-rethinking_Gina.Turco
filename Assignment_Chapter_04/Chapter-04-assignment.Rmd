@@ -99,7 +99,7 @@ yi ∼ Normal(μ, σ)
 
 ### 4E5 In the model definition just above, how many parameters are in the posterior distribution?
 
- Four - μ, σ, α and  β
+ Three - σ, α and  β
 
 ### 4M3 Translate the map model formula below into a mathematical model definition.
 
@@ -168,8 +168,8 @@ yi ∼ Normal(μ, σ)
 μi =α+βyr
 
 **yaxis** 
-
-α ∼ Normal(**120**, 50) 
+know more conident in
+α ∼ Normal(**120**, **10**) 
 
 **slope**
 
@@ -200,8 +200,9 @@ yi ∼ Normal(μ, σ)
 β ∼ Normal(0, 10)
 
 **variance**
+variance and st are not the same thing so need the sq root of 64 ~ 8
 
-σ ∼ Uniform(0, **64**)
+σ ∼ Uniform(0, **8**)
 
 
 ## For 03/31/16
@@ -241,9 +242,13 @@ mu.link <- function(weight) post$a + post$b*weight
 mu <- sapply( unkown_weights , mu.link )
 ### gets the average of all of these height lines for each weight
 mu.mean <- apply( mu , 2 , mean )
+
+### USE SIM TO PLOT FROM THIS SO THAT YOU ARE NOT PLOTING FROM THE POST a and b mu only but from a distribution of ppl!!!
 mu.HPDI <- apply( mu , 2 , HPDI , prob=0.89 )
 
 ```
+
+###kable to print out markdown table from data.frame file
 
 | Individual | Weight | Expected Height  | 89% Interval |
 | -----------|:------:| ----------------:|-------------:|

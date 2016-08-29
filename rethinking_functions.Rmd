@@ -1,0 +1,134 @@
+---
+title: "plots_rstan"
+output: html_document
+
+```{r}
+precis_plot <- function( x , y , pars , col.ci="black" , xlab="Value" , ... ) {
+    x <- x@output
+    if ( !missing(pars) ) {
+        x <- x[pars,]
+    }
+    n <- nrow(x)
+    mu <- x[n:1,1]
+    left <- x[[3]][n:1]
+    right <- x[[4]][n:1]
+    set_nice_margins()
+    dotchart( mu , labels=rownames(x)[n:1] , xlab=xlab , xlim=c(min(left),max(right)) , ... )
+    for ( i in 1:length(mu) ) lines( c(left[i],right[i]) , c(i,i) , lwd=2 , col=col.ci )
+    abline( v=0 , lty=1 , col=col.alpha("black",0.15) )
+}
+setMethod( "plot" , "precis" , function(x,y,...) precis_plot(x,y,...) )
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+resample_old <- function( object , iter=1e4 , warmup=1000 , chains=1 , cores=1 , DIC=TRUE , WAIC=TRUE , rng_seed , data , ... ) {
+    if ( !(class(object)%in%(c("map2stan"))) )
+        stop( "Requires map2stan fit" )
+    if ( missing(data) ) data <- object@data
+    init <- list()
+    if ( cores==1 | chains==1 ) {
+        for ( i in 1:chains ) init[[i]] <- object@start
+        fit <- stan( fit=object@stanfit , data=data , init=init , pars=object@pars , iter=iter , warmup=warmup , chains=chains , ... )
+    } else {
+        init[[1]] <- object@start
+        #require(parallel)
+        sys <- .Platform$OS.type
+        if ( missing(rng_seed) ) rng_seed <- sample( 1:1e5 , 1 )
+        if ( sys=='unix' ) {
+            # Mac or Linux
+            # hand off to mclapply
+            sflist <- mclapply( 1:chains , mc.cores=cores ,
+                function(chainid)
+                    stan( fit=object@stanfit , data=data , init=init , pars=object@pars , iter=iter , warmup=warmup , chains=1 , seed=rng_seed, chain_id=chainid , ... )
+            )
+        } else {
+            # Windows
+            # so use parLapply instead
+            CL = makeCluster(cores)
+            fit <- object@stanfit
+            #data <- object@data
+            pars <- object@pars
+            env0 <- list( fit=fit, data=data, pars=pars, rng_seed=rng_seed, iter=iter, warmup=warmup )
+            clusterExport(cl = CL, c("iter","warmup","data", "fit", "pars", "rng_seed"), as.environment(env0))
+            sflist <- parLapply(CL, 1:chains, fun = function(cid) {
+                #require(rstan)
+                stan(fit = fit, data = data, pars = pars, chains = 1, 
+                  iter = iter, warmup = warmup, seed = rng_seed, 
+                  chain_id = cid)
+            })
+        }
+        # merge result
+        fit <- sflist2stanfit(sflist)
+    }
+    
+    result <- object
+    result@stanfit <- fit
+    
+    # compute expected values of parameters
+    s <- summary(fit)$summary
+    s <- s[ -which( rownames(s)=="lp__" ) , ]
+    s <- s[ -which( rownames(s)=="dev" ) , ]
+    if ( !is.null(dim(s)) ) {
+        coef <- s[,1]
+        # compute variance-covariance matrix
+        varcov <- matrix(NA,nrow=nrow(s),ncol=nrow(s))
+        diag(varcov) <- s[,3]^2
+    } else {
+        coef <- s[1]
+        varcov <- matrix( s[3]^2 , 1 , 1 )
+        names(coef) <- names(result@start)
+    }
+    result@coef <- coef
+    result@vcov <- varcov
+    
+    #DIC
+    if ( DIC==TRUE ) {
+        attr(result,"DIC") <- NULL
+        dic_calc <- DIC(result)
+        pD <- attr(dic_calc,"pD")
+        attr(result,"DIC") <- dic_calc
+        attr(result,"pD") <- pD
+        attr(result,"deviance") <- dic_calc - 2*pD
+    } else {
+        # clear out any old DIC calculation
+        attr(result,"DIC") <- NULL
+        attr(result,"pD") <- NULL
+        attr(result,"deviance") <- NULL
+    }
+    
+    #WAIC
+    if ( WAIC==TRUE ) {
+        attr(result,"WAIC") <- NULL
+        waic_calc <- try(WAIC(result,n=0))
+        attr(result,"WAIC") <- waic_calc
+    } else {
+        # clear out any old WAIC calculation
+        attr(result,"WAIC") <- NULL
+    }
+    
+    return(result)
+}
+
+setMethod("plot" , "map2stan" , function(x,y,...) {
+    #require(rstan)
+    #rstan::traceplot( x@stanfit , ask=TRUE , pars=names(x@start) , ... )
+    tracerplot(x,...)
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

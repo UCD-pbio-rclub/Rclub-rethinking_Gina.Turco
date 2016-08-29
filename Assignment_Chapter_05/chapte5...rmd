@@ -1,0 +1,77 @@
+Title
+========================================================
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring web pages (click the **MD** toolbar button for help on Markdown).
+
+When you click the **Knit HTML** button a web page will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+ 
+library(rethinking)
+data(milk)
+d <- milk
+str(d)
+
+dcc <- d[ complete.cases(d),]
+
+
+m5.5 <- map(
+    alist(
+        kcal.per.g ~ dnorm( mu , sigma ) ,
+         mu <- a + bn*neocortex.perc ,
+    a ~ dnorm( 0 , 100 ) ,
+    bn ~ dnorm( 0 , 1 ) ,
+    sigma ~ dunif( 0 , 1 )
+), data=dcc )
+
+
+coef(m5.5)["bn"] * ( 76 - 55 )
+
+
+
+np.seq <- 0:100
+pred.data <- data.frame( neocortex.perc=np.seq )
+mu <- link( m5.5 , data=pred.data , n=1e4 )
+mu.mean <- apply( mu , 2 , mean )
+mu.PI <- apply( mu , 2 , PI )
+plot( kcal.per.g ~ neocortex.perc , data=dcc , col=rangi2 )
+lines( np.seq , mu.mean )
+lines( np.seq , mu.PI[1,] , lty=2 )
+lines( np.seq , mu.PI[2,] , lty=2 )
+
+```
+
+You can also embed plots, for example:
+
+```{r}
+dcc$log.mass <- log(dcc$mass)
+
+m5.6 <- map(
+    alist(
+        kcal.per.g ~ dnorm( mu , sigma ) ,
+        mu <- a + bm*log.mass ,
+        a ~ dnorm( 0 , 100 ) ,
+        bm ~ dnorm( 0 , 1 ) ,
+sigma ~ dunif( 0 , 1 ) ),
+    data=dcc )
+precis(m5.6)
+
+
+m5.7 <- map(
+    alist(
+        kcal.per.g ~ dnorm( mu , sigma ) ,
+        mu <- a + bn*neocortex.perc + bm*log.mass ,
+        a ~ dnorm( 0 , 100 ) ,
+        bn ~ dnorm( 0 , 1 ) ,
+        bm ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 1 )
+),  data=dcc )
+
+data=dcc )
+precis(m5.7)
+
+```
+
+```{r}
+
+```

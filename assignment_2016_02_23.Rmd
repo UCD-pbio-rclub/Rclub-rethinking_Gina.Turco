@@ -1,0 +1,85 @@
+### Chapter 3 probblems E1 - M2
+
+# Data for probblems
+
+```{r}
+p_grid <- seq( from=0 , to=1 , length.out=1000 )
+prior <- rep( 1 , 1000 )
+likelihood <- dbinom( 6 , size=9 , prob=p_grid )
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+set.seed(100)
+samples <- sample( p_grid , prob=posterior , size=1e4 , replace=TRUE )
+
+plot( p_grid , posterior , type="b" ,
+    xlab="probability of water" , ylab="posterior probability" )
+```
+
+3E1. How much posterior probability lies below p = 0.2?
+
+```{r}
+sum( posterior[ p_grid < 0.2 ] )
+
+sum(samples<0.2)/length(samples)
+```
+
+3E2. How much posterior probability lies above p = 0.8?
+### what porption of samples are above .8
+
+```{r}
+sum( posterior[ p_grid > 0.8 ] )
+
+sum(samples>0.8)/length(samples)
+```
+
+3E3. How much posterior probability lies between p = 0.2 and p = 0.8? 
+```{r}
+sum(  samples < 0.8 & samples > 0.2 )/length(samples)
+```
+
+3E4. 20% of the posterior probability lies below which value of p?
+```{r}
+quantile(samples, c(0.2))
+```
+
+3E5. 20% of the posterior probability lies above which value of p?
+```{r}
+quantile(samples, c(0.8))
+```
+
+3E6. Which values of p contain the narrowest interval equal to 66% of the posterior probability?
+
+
+```{r}
+HPDI( samples , prob=0.66 )
+```
+3E7. Which values of p contain 66% of the posterior probability, assuming equal posterior probabil- ity both below and above the interval?
+
+```{r}
+PI( samples , prob=0.66 )
+```
+
+##Medium.
+
+3M1. Suppose the globe tossing data had turned out to be 8 water in 15 tosses. Construct the posterior distribution, using grid approximation. Use the same flat prior as before.
+
+
+```{r}
+p_grid <- seq( from=0 , to=1 , length.out=1000 )
+## flat prior
+prior <- rep( 1 , 1000 )
+likelihood <- dbinom( 8 , size=15 , prob=p_grid )
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+
+plot( p_grid , posterior , type="b" ,
+    xlab="probability of water" , ylab="posterior probability" )
+```
+
+3M2. Draw 10,000 samples from the grid approximation from above. Then use the samples to calculate the 90% HPDI for p.
+
+```{r}
+samples <- sample( p_grid , prob=posterior , size=10000 , replace=TRUE )
+HPDI(samples,prob=0.9)
+```
+

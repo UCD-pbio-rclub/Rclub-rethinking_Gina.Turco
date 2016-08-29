@@ -1,0 +1,97 @@
+---
+title: '8.3'
+output: html_document
+---
+
+## R Markdown
+##
+```{r}
+post <- extract.samples( m8.1stan )
+names(post)
+post$sigma
+
+### make matrixs with each of the fits...use sapply to get the sigmas for all the models and plot them
+
+```
+Set up before for running a quadradic model on our data
+
+```{r}
+
+library(rethinking)
+data(rugged)
+d <- rugged
+d$log_gdp <- log(d$rgdppc_2000)
+dd <- d[ complete.cases(d$rgdppc_2000) , ]
+         
+m8.1 <- map(
+    alist(
+        log_gdp ~ dnorm( mu , sigma ) ,
+        mu <- a + bR*rugged + bA*cont_africa + bAR*rugged*cont_africa ,
+        a ~ dnorm(0,100),
+        bR ~ dnorm(0,10),
+        bA ~ dnorm(0,10),
+        bAR ~ dnorm(0,10),
+        sigma ~ dunif(0,10)
+),    data=dd )
+
+precis(m8.1)
+```
+
+priming data for monte carlo...
+
+```{r}
+dd.trim <- dd[ , c("log_gdp","rugged","cont_africa") ]
+str(dd.trim)
+
+
+m8.1stan <- map2stan(
+    alist(
+        log_gdp ~ dnorm( mu , sigma ) ,
+        mu <- a + bR*rugged + bA*cont_africa + bAR*rugged*cont_africa ,
+        a ~ dnorm(0,100),
+        bR ~ dnorm(0,10),
+        bA ~ dnorm(0,10),
+        bAR ~ dnorm(0,10),
+        sigma ~ dcauchy(0,2)
+), data=dd.trim )
+
+precis(m8.1stan)
+
+```
+
+n_eff is a crude estimate of the number of independent samples you managed to get. Rhat is a complicated estimate of the convergence of the Markov chains to the target distribution. It should approach 1.00 from above, when all is well.
+
+
+```{r}
+m8.1stan <- map2stan(
+    alist(
+        log_gdp ~ dnorm( mu , sigma ) ,
+        mu <- a + bR*rugged + bA*cont_africa + bAR*rugged*cont_africa ,
+        a ~ dnorm(0,100),
+        bR ~ dnorm(0,10),
+        bA ~ dnorm(0,10),
+        bAR ~ dnorm(0,10),
+        sigma ~ dcauchy(0,2)
+), data=dd.trim )
+
+```
+
+For now, it’s worth noting that once you have compiled your Stan model with map2stan, you can draw more samples from it anytime, running as many independent Markov chains as you like. And you can easily parallelize those chains, as well. To run four independent Markov chains for the model above, and to distribute them across separate processors in your computer, just pass the previous fit back to map2stan:
+
+```{"r"}
+
+
+m8.1stan_4chains <- map2stan( m8.1stan , chains=4 , cores=4 )
+precis(m8.1stan_4chains)
+```
+
+### ploting
+
+```{r}
+
+post <- extract.samples( m8.1stan )
+str(post)
+pairs(post)
+pairs(m8.1stan)
+show(m8.1stan)
+plot(m8.1stan)
