@@ -15,13 +15,14 @@ Do a Bayesian analysis of hypocotyl length (hyp) in the attached data sheet.
 
 2) Use "S. chmielewskii" as the reference.  For each of the other species evaluate the hypothesis that their response to shade differs from S. chmielewskii.
 
+# Load and Look at Data
+
 ```{r}
 library("rethinking")
-library("ggplot")
-library("reshape")
+library("ggplot2")
+library("reshape2")
 
-d = read.csv("/Users/gturco/Documents/code/Rclub-rethinking_Gina.Turco/Assignment_Chapter_09/TomatoR2CSHL.csv",header=TRUE)
-
+d = read.csv("/Users/gturco/Documents/2011_2016_PHD/code/Rclub-rethinking_Gina.Turco/Assignment_Chapter_09/TomatoR2CSHL.csv",header=TRUE)
 
 ### first look at the data does it look how we cant it to look
 head(d)
@@ -32,114 +33,168 @@ summary(d)
 ggplot(data=d,aes(x=hyp,fill=trt)) + geom_density() + facet_grid(species~trt)
 ggplot(data=d,aes(y=hyp,x=species,fill=trt)) + geom_boxplot() 
 
+```
 
+# fit model by treatment
+```{r}
+d$trt.l <- ifelse( d$trt=="L" , 1 , 0 )
+levels(d$trt)
+
+d.trt <- d[,c("hyp","trt.l")]
+
+m.trt <- map2stan(
+    alist(
+        hyp ~ dnorm( mu , sigma ) ,
+        mu <- a + bT*trt.l  ,
+        a ~ dnorm( 33 , 10 ) ,
+        bT ~ dnorm( 0 , 1 ) ,
+        sigma ~ dunif( 0 , 10 )
+) , data = d.trt ) 
+
+precis(m.trt)
+plot(precis(m.trt))
+```
+
+Treatment changes the slope of the mean by aprox 3 cm
+
+
+# fit the model by species
+
+```{r}
+d.species <- d[,c("hyp","species")]
+d.species$id <- 1:nrow(d.species)
+
+### what do you want to be in each row ~ what do you want the rest of the collems to be, lengths gives us zeros or ones depending on which vaule it is.. need id/index so that it doesnt combine simlar values into a singel row.
+d.species <- dcast(d.species, hyp + id ~ species, value.var="species", fun.aggregate = length)
+colnames(d.species) <- sub(". ","_",fixed = TRUE, colnames(d.species))
+head(d.species)
+d.species <- d.species[,c(-2,-4)]
+
+
+m.species <- map2stan(
+  alist(
+    hyp ~ dnorm(mu,sigma),
+    mu <- a + bChi * S_chilense + bHab * S_habrochaites + bPen * S_pennellii + bPer * S_peruvianum,
+    a ~ dnorm(mu=33,sd=10),
+    c(bChi, bHab, bPen, bPer) ~ dnorm(0,10),
+    sigma ~ dcauchy(0,1)),
+    data=d.species, chains=4, cores = 1)
+
+
+plot(m.species)
+par(mfrow=c(1,1),mfcol=c(1,1))
+pairs(m.species)
+precis(m.species)
+plot(precis(m.species))
+```
+
+There is a species interaction some interact below and some interact above the mean. Hab and Pen lower than the mean while Pen and Per are higher.
+
+# species and treatment model
+```{r}
+trt_l <- d$trt.l
+d.species_trt <- cbind(d.species,trt_l)
+summary(d.species_trt)
+
+m.species_trt <- map2stan(
+  alist(
+    hyp ~ dnorm(mu,sigma),
+    mu <- a + bT*trt_l + bChi * S_chilense + bHab * S_habrochaites + bPen * S_pennellii + bPer * S_peruvianum,
+    a ~ dnorm(mu=33,sd=10),
+    c(bChi, bHab, bPen, bPer, bT) ~ dnorm(0,10),
+    sigma ~ dcauchy(0,1)),
+    data=d.species_trt, chains=4, cores = 1)
+
+
+plot(m.species_trt)
+par(mfrow=c(1,1),mfcol=c(1,1))
+pairs(m.species_trt)
+precis(m.species_trt)
+plot(precis(m.species_trt))
+
+```
+
+Hab and Pen are lower then the mean while PER and CHi are higher. This is the same as before really need to look at interactions to get a better idea. BT really doesnt show any correlation with any species in particular but more with the S.CHM 
+
+# species by treatment model
+
+```{r}
+
+m.species_by_trt <- map2stan(
+  alist(
+    hyp ~ dnorm(mu,sigma),
+    mu <- a + bChi * S_chilense *trt_l + bHab * S_habrochaites*trt_l  + bPen * S_pennellii*trt_l + bPer * S_peruvianum*trt_l,
+    a ~ dnorm(mu=33,sd=10),
+    c(bChi, bHab, bPen, bPer) ~ dnorm(0,10),
+    sigma ~ dcauchy(0,1)),
+    data=d.species_trt, chains=4, cores = 1)
+
+plot(m.species_by_trt)
+par(mfrow=c(1,1),mfcol=c(1,1))
+pairs(m.species_by_trt)
+precis(m.species_by_trt)
+plot(precis(m.species_by_trt))
+
+```
+
+HABs stan results are pretty noisey is this because alpha and hab have some correlation with each other.... or even the cause for the correlation...When trt is also interaction factor the species effect is not as large. PER seems to have the largest species and treatment effect.
+ 
+# compare models on untransformed data
+
+```{r}
+compare(m.trt,m.species,m.species_trt,m.species_by_trt)
+plot(compare(m.trt,m.species,m.species_trt,m.species_by_trt))
+plot(coeftab(m.trt,m.species,m.species_trt,m.species_by_trt))
+
+```
+
+species and species_trt are very similar the differnce between the two is 1.7 and the stadard error diff is 1. The standard error for all is large so it is hard to tell which is the true model....
+## transformed data
+
+
+```{r}
 ### transform data the does not have long tails....
 ### tells which are normal and which are not normal for hight and low for trt and species seperated
 by(d$hyp,list(d$trt,d$species),shapiro.test)
-
-### repeat for proposed transformation
+## repeat for proposed transformation
 by(sqrt(d$hyp),list(d$trt,d$species),shapiro.test)
 ### sqrt  helps and makes the data more normal 
 by(log2(d$hyp),list(d$trt,d$species),shapiro.test)
 
-d$trt.l <- ifelse( d$trt=="L" , 1 , 0 )
-d$trt.l2 <- as.numeric(d$trt) -1
-levels(d$trt)
+data.species.trt.sqrt <- within(d.species_trt, hyp <- sqrt(hyp))
 
-CHS.trt <- map(
-    alist(
-        hyp ~ dnorm( mu , sigma ) ,
-        mu <- a + bT*trt.h  ,
-        a ~ dnorm( 33 , 10 ) ,
-        bT ~ dnorm( 0 , 1 ) ,
-        sigma ~ dunif( 0 , 10 )
-) , data = d ) 
-
-precis(CHS.trt)
-plot(precis(CHS.trt))
-
-
-d$species <- as.numeric(d$species) -1
-
-data = d
-data.species <- data[,c("hyp","species")]
-data.species$id <- 1:nrow(data.species)
-
-### what do you want to be in each row ~ what do you want the rest of the collems to be, lengths gives us zeros or ones depending on which vaule it is.. need id/index so that it doesnt combine simlar values into a singel row.
-data.species <- dcast(data.species, hyp + id ~ species, value.var="species", fun.aggregate = length)
-colnames(data.species) <- sub(". ","_",fixed = TRUE, colnames(data.species))
-
-### need to make smaller so that it can go into map2san use only what we want
-data2.trt -> data2[,c("hyp","trt2")]
-
-trt.stan <- map2stan(
-    alist(
-        hyp ~ dnorm( mu , sigma ) ,
-        mu <- a + bT*trt.h  ,
-        a ~ dnorm( 0 , 100 ) ,
-        bT ~ dnorm( 0 , 10 ) ,
-        sigma ~ dunif( 0 , 10 )
-) , data = d ) 
-
-precis(trt.stan)
-plot(trt.stan)
-par(mfrow=c(1,1),mfcol=c(1,1))
-plot(precis(hyp.stan)) 
-
-
-#### species
-colnames(data2) <- sub(". ","_",colnames(data2))
-data2.species.all <- data2[,c(2,4,8)]
-
-
-species.stan <- map2stan(
-        alist(
-        hyp ~ dnorm( mu , sigma ) ,
-        mu <- bA*chilense + bP*pennellii + bR*peruvianum + bH*habrochaites + bC*chmielewskii,
-        c(bP,bR,bH,bC) ~ dnorm( 33.35, 20 ),
-        sigma ~ dunif( 0 , 10 )
-) , data = d ) 
-
-### new data frame 
-
-species2.stan <- map2stan(
-        alist(
-        hyp ~ dnorm( mu , sigma ) ,
-        mu <- bP*pennellii + bR*peruvianum + bH*habrochaites + bC*chmielewskii,
-        c(bP,bR,bH,bC) ~ dnorm( 0, 10 ),
-        sigma ~ dunif( 0 , 10 )
-) , data = d ) 
-
-precis(species.stan)
-plot(precis(species.stan))
-
-compare(species.stan,species2.stan,trt.stan)
-### having treatment and species really helps
-### also plot the compare function look back at the book to see what this is
-
-coeftab(species.stan,species2.stan,trt.stan)
-
-### how diffrence are these...
-
-post.bt<- extract.samples(species.trt.stan)$bt
-
-
-### try fitting with sqrt and see how they compare....
-
-
-#CHS. <- map2stan(
-#    alist(
-#        hyp ~ dnorm( mu , sigma ) ,
-#        mu <- a + bT*trt * bS*species  + bTS*trt*species ,
-#        a ~ dnorm( 10 , 10 ) ,
-#        bT ~ dnorm( 0 , 1 ) ,
-#        bS ~ dnorm( 0 , 1 ) ,
-#        bTS ~ dnorm( 0 , 1 ) ,
-#        sigma ~ dunif( 0 , 10 )
-#) , data = d,iter=1e4, warmup=100 , WAIC=FALSE ) 
-
-#plot(m.CHS)
-
+sqrt_hyp <- sqrt(d.species_trt$hyp)
+d.species_trt_sqrt <- cbind(sqrt_hyp, d.species_trt[,2:6])
+summary(d.species_trt_sqrt)
 
 ```
+
+
+# species and treatment transform model
+```{r}
+
+m.species_trt_sqrt <- map2stan(
+  alist(
+    sqrt_hyp ~ dnorm(mu,sigma),
+    mu <- a + bT*trt_l + bChi * S_chilense + bHab * S_habrochaites + bPen * S_pennellii + bPer * S_peruvianum,
+    a ~ dnorm(mu=6,sd=10),
+    c(bChi, bHab, bPen, bPer, bT) ~ dnorm(0,10),
+    sigma ~ dcauchy(0,1)),
+    data=d.species_trt_sqrt, chains=4, cores = 1)
+
+
+plot(m.species_trt_sqrt)
+par(mfrow=c(1,1),mfcol=c(1,1))
+pairs(m.species_trt_sqrt)
+precis(m.species_trt_sqrt)
+plot(precis(m.species_trt_sqrt))
+
+
+compare(m.species_trt,m.species_trt_sqrt)
+plot(compare(m.species_trt,m.species_trt_sqrt))
+plot(coeftab(m.species_trt,m.species_trt_sqrt))
+
+```
+
+It is unfair to compare using WAIC because WAIC uses the deviance and taking the sqrt changes the deviance between means... Also my stan is sooo small in smapling, not prop sampling the paramter space...!! Coetab shows posteior dist so there is more dev in the non-transformed model then in the transformed model. The means are also very differnet.
 
