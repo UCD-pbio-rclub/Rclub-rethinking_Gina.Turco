@@ -1,0 +1,96 @@
+---
+title: "Chapter_10_1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# E1. If an event has probability 0.35, what are the log-odds of this event?
+
+```{r}
+library(rethinking)
+logit(0.35)
+```
+
+# E2. If an event has log-odds 3.2, what is the probability of this event?
+
+```{r}
+logistic(3.2)
+```
+
+# E3. Suppose that a coe cient in a logistic regression has value 1.7. What does this imply about the proportional change in odds of the outcome?
+
+```{r}
+exp(logistic(1.7))
+```
+
+This gives you a 2.4 proportional change/ odds increase of the outcome
+
+
+# M1. As explained in the chapter, binomial data can be organized in aggregated and disaggregated forms, without any impact on inference. But the likelihood of the data does change when the data are converted between the two formats. Can you explain why?
+
+
+The disaggregated seperates each of the samples because each of them may have their own baised masking the important parts of the data.
+
+
+# H1. Use map to construct a quadratic approximate posterior distribution for the chimpanzee model that includes a unique intercept for each actor, m10.4 (page 299). Compare the quadratic approximation to the posterior distribution produced instead from MCMC. Can you explain both the di erences and the similarities between the approximate and the MCMC distributions?
+
+```{r}
+data(chimpanzees)
+d <- chimpanzees
+d2 <- d
+d2$recipient <- NULL
+
+
+m10.4 <- map2stan(
+    alist(
+        pulled_left ~ dbinom( 1 , p ) ,
+        logit(p) <- a[actor] + (bp + bpC*condition)*prosoc_left ,
+        a[actor] ~ dnorm(0,10),
+        bp ~ dnorm(0,10),
+        bpC ~ dnorm(0,10)
+),
+data=d2 , chains=2 , iter=2500 , warmup=500 )
+
+precis( m10.4 , depth=2 )
+precis( m10.4) 
+
+
+m10.4b <- map(
+    alist(
+        pulled_left ~ dbinom( 1 , p ) ,
+        logit(p) <- a[actor] + (bp + bpC*condition)*prosoc_left ,
+        a[actor] ~ dnorm(0,10),
+        bp ~ dnorm(0,10),
+        bpC ~ dnorm(0,10)
+),
+data=d2  )
+
+precis(m10.4b,depth=2)
+precis(m10.4,depth=2)
+pairs(m10.4)
+pairs(m10.4b)
+```
+
+
+# H2. Use WAIC to compare the chimpanzee model that includes a unique intercept for each actor, m10.4 (page 299), to the simpler models  t in the same section.
+
+
+```{r}
+
+m10.2 <- map(
+    alist(
+        pulled_left ~ dbinom( 1 , p ) ,
+        logit(p) <- a + bp*prosoc_left ,
+        a ~ dnorm(0,10) ,
+        bp ~ dnorm(0,10)
+),
+    data=d )
+
+compare( m10.2 , m10.4 )
+
+```
+
+100% of weight is gvien to the top model. Much higher SE in top model tho but much better score.
