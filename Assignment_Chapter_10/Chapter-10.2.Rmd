@@ -1,0 +1,93 @@
+---
+title: '10.2'
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+Practically, the Poisson distribution is used for counts that never get close to any theoretical maximum. As a special case of the binomial, it has maximum entropy under
+exactly the same constraints. Its shape is described by a single parameter, the rate of events λ. Poisson GLMs are detailed in the next chapter.
+
+
+## 10E4. Why do Poisson regressions sometimes require the use of an offset? Provide an example.
+
+
+because the varaibles are some times correlated and this allows the model to work better by reducing the correlation.
+
+
+## 10M2. If a coefficient in a Poisson regression has value 1.7, what does this imply about the change in the outcome?
+
+```{r}
+exp(1.7)
+```
+
+That the outcome is increasing by 5.4 units for every unit outcome.
+
+## 10M4. Explain why the log link is appropriate for a Poisson generalized linear model.
+
+This most important thing the log link function does it ensure that the value is always postive as expect from a rate value. It also creates an exponetial replationship between the predictors and the expected values but I dont think this is important for the link  function and making sure there are no mathamtical issues.
+
+
+## 10M5. What would it imply to use a logit link for the mean of a Poisson generalized linear model? Can you think of a real research problem for which this would make sense?
+
+logit link maps paramters between zero and one this is useful for probalbities. This is unlikely for the mean of a poisson disubution because this mean will most likely be zero because the prob of an even durring a Poisson dist is so small which is why we use rate instead to count this.
+
+
+## 10H1. Use map to construct a quadratic approximate posterior distribution for the chimpanzee model that includes a unique intercept for each actor, m10.4 (page 299). Compare the quadratic approximation to the posterior distribution produced instead from MCMC. Can you explain both the differences and the similarities between the approximate and the MCMC distributions?
+
+```{r}
+library(rethinking)
+data(chimpanzees)
+d <- chimpanzees
+
+### using logit here because this is a normal distbution
+
+d2 <- d
+d2$recipient <- NULL
+
+m10.4 <- map(
+    alist(
+        pulled_left ~ dbinom(1 , p ) ,
+        logit(p) <- a[actor] + (bp + bpC*condition)*prosoc_left ,
+        a[actor] ~ dnorm(0,10),
+        bp ~ dnorm(0,10),
+        bpC ~ dnorm(0,10)
+),
+data=d2)
+
+### do we need to remove other vars for map2stan and why?
+
+m10.4stan <- map2stan(
+    alist(
+        pulled_left ~ dbinom( 1 , p ) ,
+        logit(p) <- a[actor] + (bp + bpC*condition)*prosoc_left ,
+        a[actor] ~ dnorm(0,10),
+        bp ~ dnorm(0,10),
+        bpC ~ dnorm(0,10)
+),
+data=d2 )
+
+compare(m10.4,m10.4stan)
+
+
+precis(m10.4,depth=2, corr=TRUE)
+precis(m10.4stan,depth=2, corr=TRUE)
+plot(m10.4stan)
+
+compare(m10.4,m10.4stan)
+
+pairs(m10.4)
+pairs(m10.4stan)
+
+
+
+```
+
+
+a1 and a2 are not normally dist in the MCMC model. bp and bpc are correlated in both the stan and nonstan model, although sligntly less correlated in the non-stan model. 
