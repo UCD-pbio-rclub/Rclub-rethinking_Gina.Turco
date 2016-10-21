@@ -1,0 +1,204 @@
+---
+title: "Chapter-10.3"
+output:
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+10H3.  The data contained in library(MASS);data(eagles) are records of salmon pirating attempts by Bald Eagles in Washington State. See ?eagles for details. While one eagle feeds, sometimes another will swoop in and try to steal the salmon from it. Call the feeding eagle the “victim” and the thief the “pirate.” Use the available data to build a binomial GLM of successful pirating attempts.
+
+
+(a) Consider the following model:
+log pi
+1 − pi
+α βP βV βA
+= α+βPPi +βVVi +βAAi
+∼ Normal(0, 10) ∼ Normal(0, 5) ∼ Normal(0, 5) ∼ Normal(0, 5)
+yi ∼ Binomial(ni, pi)
+
+where y is the number of successful attempts, n is the total number of attempts, P is a dummy variable indicating whether or not the pirate had large body size, V is a dummy variable indicating whether or not the victim had large body size, and  nally A is a dummy variable indicating whether or not the pirate was an adult. Fit the model above to the eagles data, using both map and map2stan. Is the quadratic approximation okay?
+
+```{r}
+library(MASS);data(eagles)
+library(ggplot2)
+?eagles
+summary(eagles)
+qplot(x=n,y=y, data=eagles)
+
+
+library(rethinking)
+
+d <- eagles
+d$P <- ifelse( d$P=="L" , 1 , 0 ) 
+d$V <- ifelse( d$V=="L" , 1 , 0 ) 
+d$A <- ifelse( d$A=="A" , 1 , 0 ) 
+
+m10.3hA <- map(
+    alist(
+         y ~ dbinom(n , p ) ,
+        ## do we want to leave one of these out....
+         logit(p) <- a + bp*P + ba*A + bv*V,
+        a ~ dnorm(0,10),
+        bp ~ dnorm(0,1),
+        ba ~ dnorm(0,1),
+        bv ~ dnorm(0,1)
+),
+data=d)
+
+
+m10.3hA.stan <- map2stan(
+    alist(
+         y ~ dbinom(n , p ) ,
+        ## do we want to leave one of these out....
+         logit(p) <- a + bp*P + ba*A + bv*V,
+        a ~ dnorm(0,10),
+        bp ~ dnorm(0,1),
+        ba ~ dnorm(0,1),
+        bv ~ dnorm(0,1)
+),
+data=d)
+
+pairs(m10.3hA)
+pairs(m10.3hA.stan)
+```
+
+Yes we can tell from the pairs plot that using quadratic approximation is okay!
+
+
+(b) Now interpret the estimates. If the quadratic approximation turned out okay, then it’s okay to use the map estimates. Otherwise stick to map2stan estimates.  en plot the posterior predictions. Compute and display both (1) the predicted probability of success and its 89% interval for each row (i) in the data, as well as (2) the predicted success count and its 89% interval. What different information does each type of posterior prediction provide?
+
+```{r}
+#y.seq <- seq(from=0,to=30,by=1)
+#n.seq <- seq(from=0,to=30,by=1)
+#a = rep(c(0,1,1,0), times=31)
+#v= rep(c(0,1,0,1), times=31)
+#p = rep(c(0,1,0), times=31)
+d.pred <- d
+mu.m10.3hA <- link( m10.3hA , d)
+mu.m10.3hA.mean <- apply( mu.m10.3hA , 2 , mean )
+mu.m10.3hA.PI <- apply( mu.m10.3hA , 2 , PI , prob=0.97 )
+
+```
+They each represent each of the combinations of P,A and V
+
+
+
+(c) Now try to improve the model. Consider an interaction between the pirate’s size and age (immature or adult). Compare this model to the previous one, using WAIC. Interpret.
+
+
+```{r}
+m10.3hB <- map(
+    alist(
+         y ~ dbinom(n , p ) ,
+        ## do we want to leave one of these out....
+         logit(p) <- a + bP*P + bA*A + bV*V + bPA * P*A,
+        a ~ dnorm(0,10),
+        bP ~ dnorm(0,1),
+        bA ~ dnorm(0,1),
+        bV ~ dnorm(0,1),
+        bPA ~ dnorm(0,1)
+),
+data=d)
+
+compare(m10.3hA,m10.3hB)
+```
+The model without the interaction term is slignylu better then the model with the interaction term. Because it is only slighly better this suggest that the interaction term is important and maybe we need to rework the model a bit to a git a better WAIC.
+
+
+
+## Example from Julin 
+
+The attached data sheet is from Liron and records germination for M82 and pen at two temperatures
+
+```{r}
+
+l <- read.csv("/Users/gturco/Documents/2011_2016_PHD/code/Rclub-rethinking_Gina.Turco/Assignment_Chapter_10/LironDataTime1.csv",header=TRUE)
+
+summary(l)
+### germination yes or no event, this is a proablity of happening not a low sucess rate (not poisson) and using count data- binomial
+
+
+### not sure this are showing me anything would be better to plot prob of yes and no....
+ggplot(data=l, aes(x=Germination,y=Temperature,fill=Species)) + geom_boxplot(position="dodge")
+ggplot(data=l, aes(fill=Germination,x=Temperature)) + geom_density() + facet_grid(Species~Germination)
+
+
+
+```
+
+Perform a Bayesian analysis to determine whether or not the two species have different germination rates, whether temperature affects germination, and whether there is a temperature by germination interaction.  
+
+```{r}
+### germination yes or no event
+d <- data.frame(Germination=ifelse(l$Germination=="Yes",1,0), Temperature=l$Temperature, Species=ifelse(l$Species=="M82",1,0))
+
+### is this one trail for each of these
+
+
+### how do we adjust the coiffent range should it be count or prob or logit..
+#m10.liron <- map(
+#    alist(
+#          ### is this one trail for each of these
+#         Germination ~ dbinom(1,p) ,
+#         logit(p) <- a + bT*Temperature + bS*Species + bTS * Temperature*Species,
+#        a ~ dnorm(0,100),
+#        ## is the temp in cel...
+#        bT ~ dnorm(0,100),
+#        bS ~ dnorm(0,100),
+#        bTS ~ dnorm(0,100)
+#),
+#data=l)
+
+m10.liron.stan <- map2stan(
+    alist(
+          ### is this one trail for each of these
+         Germination ~ dbinom(1,p) ,
+         logit(p) <- a + bT*Temperature + bS*Species + bTS * Temperature*Species,
+        a ~ dnorm(0,100),
+        ## is the temp in cel...
+        bT ~ dnorm(0,100),
+        bS ~ dnorm(0,100),
+        bTS ~ dnorm(0,100)
+),
+data=d)
+
+
+pairs(m10.liron.stan)
+## slight skew use stan over map data
+
+
+m10.liron.stanB <- map2stan(
+    alist(
+          ### is this one trail for each of these
+         Germination ~ dbinom(1,p) ,
+         logit(p) <- a + bT*Temperature + bS*Species,
+        a ~ dnorm(0,100),
+        ## is the temp in cel...
+        bT ~ dnorm(10,100),
+        bS ~ dnorm(0,100)
+),
+data=d)
+
+compare(m10.liron.stan,m10.liron.stanB)
+## model without interaction is slightly better....
+
+```
+
+
+Determine the posterior estimates for germination rate for each species at each temperature and determine the confidence intervals around these estimates.
+
+```{r}
+
+d.pred <- data.frame(Temperature=c(22,22,14,14),Species=c(0,1,0,1))
+mu.m10.liron.stan <- link(m10.liron.stan , d.pred)
+mu.m10.liron.stan.mean <- apply( mu.m10.liron.stan , 2 , mean )
+mu.m10.liron.stan.PI <- apply( mu.m10.liron.stan , 2 , PI , prob=0.97 )
+## temp 22 and M82, temp 22 and pen, temp 14 and M82,temp 22 and pen 
+mu.m10.liron.stan.mean
+mu.m10.liron.stan.PI
+```
