@@ -1,0 +1,156 @@
+---
+title: "Chapter-12"
+output:
+  html_document:
+    keep_md: true
+
+---
+
+12E1. Which of the following priors will produce more shrinkage in the estimates? 
+(a) αtank ∼ Normal(0, 1); 
+*(b) αtank ∼ Normal(0, 2)*.
+
+A wider pior will allow the model to move points more towards the datas mean, although this is not much larger...
+
+12E2. Make the following model into a multilevel model.
+
+yi ∼ Binomial(1, pi)
+logit(pi) = αgroup[i] + βxi 
+αgroup ∼ Normal(0, 10)
+β ∼ Normal(0, 1)
+
+yi ∼ Binomial(1, pi)
+logit(pi) = αgroup[i] + βxi 
+αgroup ∼ Normal(α, σ)
+α ∼ Normal(0, 10) 
+σ ∼ HalfCauchy(0, 1)
+β ∼ Normal(0, 1)
+
+12M1. Revisit the Reed frog survival data, data(reedfrogs), and add the predation and size treatment variables to the varying intercepts model. Consider models with either main effect alone, both main effects, as well as a model including both and their interaction. Instead of focusing on inferences about these two predictor variables, focus on the inferred variation across tanks. Explain why it changes as it does across models.
+
+```{r}
+library(rethinking)
+data(reedfrogs)
+d <- reedfrogs
+str(d)
+
+pairs(d)
+
+d$pred <- ifelse( d$pred=="pred" , 1 , 0 )
+d$size <- ifelse( d$size=="big" , 1 , 0 )
+#Consider models with either main effect alone, 
+d$tank <- 1:nrow(d)
+summary(d)
+
+colnames(d) <- c("density","pred","tank_size","surv","propsurv","tank")
+
+m12.2 <- map2stan(
+    alist(
+        surv ~ dbinom( density , p ) ,
+        logit(p) <- a_tank[tank] ,
+        a_tank[tank] ~ dnorm( a , sigma ) ,
+        a ~ dnorm(0,1) ,
+        sigma ~ dcauchy(0,1)
+    ), data=d , iter=4000 , chains=4 )
+
+
+
+m12.2pred <- map2stan(
+    alist(
+        surv ~ dbinom( density , p ) ,
+        logit(p) <- a_tank[tank] + bP*pred,
+        a_tank[tank] ~ dnorm( a , sigma ) ,
+        bP ~ dnorm(0,1),
+        a ~ dnorm(0,1) ,
+        sigma ~ dcauchy(0,1)
+    ), data=d , iter=4000 , chains=4 )
+
+
+m12.2size <- map2stan(
+    alist(
+        surv ~ dbinom( density , p ) ,
+        logit(p) <- a_tank[tank] + bS*tank_size,
+        a_tank[tank] ~ dnorm( a , sigma ) ,
+        bS ~ dnorm(0,1),
+        a ~ dnorm(0,1) ,
+        sigma ~ dcauchy(0,1)
+    ), data=d , iter=4000 , chains=4 )
+
+
+#both main effects, as well as a model including both and their interaction.
+
+m12.2pred_size <- map2stan(
+    alist(
+        surv ~ dbinom( density , p ) ,
+        logit(p) <- a_tank[tank] + bP*pred + bS*tank_size,
+        a_tank[tank] ~ dnorm( a , sigma ) ,
+        c(bP,bS) ~ dnorm(0,1),
+        a ~ dnorm(0,1) ,
+        sigma ~ dcauchy(0,1)
+    ), data=d , iter=4000 , chains=4 )
+
+
+#as well as a model including both and their interaction.
+
+
+m12.2pred_sizei <- map2stan(
+    alist(
+        surv ~ dbinom( density , p ) ,
+        logit(p) <- a_tank[tank] + bP*pred + bS*pred + bSP*pred+tank_size,
+        a_tank[tank] ~ dnorm( a , sigma ) ,
+        c(bP,bS,bSP) ~ dnorm(0,1),
+        a ~ dnorm(0,1) ,
+        sigma ~ dcauchy(0,1)
+    ), data=d , iter=4000 , chains=4 )
+
+
+
+
+m12.2pred_size_i <- map2stan(
+    alist(
+        surv ~ dbinom( density , p ) ,
+        logit(p) <- a_tank[tank] + bP*pred + bS*pred + bSP*pred+tank_size ,
+        a_tank[tank] ~ dnorm( a , sigma ) ,
+        c(bP,bS, bSP) ~ dnorm(0,1),
+        a ~ dnorm(0,1) ,
+        sigma ~ dcauchy(0,1)
+    ), data=d , iter=4000 , chains=4 )
+
+```
+
+
+12M2. Compare the models you  fit just above, using WAIC. Can you reconcile the diff erences in WAIC with the posterior distributions of the models?
+
+```{r}
+compare(m12.2pred, m12.2size, m12.2pred_size,m12.2pred_size_i)
+```
+
+```{r}
+library(ggplot2)
+
+post <- extract.samples(m12.2pred)
+# compute median intercept for each tank
+# also transform to probability with logistic because of the logit function
+## average for each tank of population 
+d$propsurv.pred <- logistic( apply( post$a_tank , 2 , median ) ) 
+ggplot(d, aes(tank,propsurv.pred)) + geom_point(aes(colour=factor(tank_size))) + labs(title = "pred")
+
+### same for pred and size
+post_pred_size <- extract.samples(m12.2pred_size)
+d$propsurv.pred_size <- logistic( apply( post_pred_size$a_tank , 2 , median ) )
+ggplot(d, aes(tank,propsurv.pred_size)) + geom_point(aes(colour=factor(tank_size))) + labs(title = "pred and size")
+### same for pred and size
+post_size <- extract.samples(m12.2size)
+d$propsurv.size <- logistic( apply( post_size$a_tank , 2 , median ) )
+ggplot(d, aes(tank,propsurv.size)) + geom_point(aes(colour=factor(tank_size))) + labs(title = "size")
+
+### same for pred and size
+post_pred_sizei <- extract.samples(m12.2pred_sizei)
+d$propsurv.pred_sizei <- logistic( apply( post_pred_sizei$a_tank , 2 , median ) )
+ggplot(d, aes(tank,propsurv.pred_sizei)) + geom_point(aes(colour=factor(tank_size)))+ labs(title = "pred and size interaction")
+
+
+```
+
+
+
