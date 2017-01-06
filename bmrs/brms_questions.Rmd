@@ -1,0 +1,165 @@
+---
+title: "BRMS questions"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, autodep = TRUE)
+```
+
+# Exercises
+
+To gain familiarity with `brms` I am going to have you refit models from Statistical Rethinking with brms.  In all cases compare the brms and map2stan parameter estimates; they should be effectively the same if you have specified them correctly.
+
+## Q1
+
+Fit model 10.9 (R code 10.28) with brms.  Remember that you should not need to transform the predictors, create dummy variables, nor coerce indexes to use brms.  Compare to the map2stan fit.  Test whether the coefficient for gender is different from 0 in the brms model.  
+
+### map2stan model
+
+```{r}
+library(brms)
+library(rstan)
+library(rethinking)
+data(UCBadmit)
+d <- UCBadmit
+
+d$male <- ifelse( d$applicant.gender=="male" , 1 , 0 )
+d$dept_id <- coerce_index( d$dept )
+
+m10.9 <- map(
+    alist(
+        admit ~ dbinom( applications , p ) ,
+        logit(p) <- a[dept_id] + bm*male ,
+        a[dept_id] ~ dnorm(0,10) ,
+        bm ~ dnorm(0,10)
+) , data=d, method="Nelder-Mead" )
+
+
+m10.9stan <- map2stan( m10.9 , chains=2 , iter=2500 , warmup=500 )
+
+```
+
+### bmrs model
+
+```{r}
+## why do u need to give intercept of zero here?
+
+m10.9bmr <- brm(admit | trials(applications) ~ 0 + dept + applicant.gender,
+             family = "binomial",
+             prior=set_prior("normal(0,10)", class="b"),
+             data = d
+             )
+
+
+```
+
+### compare coefficient for gender
+
+```{r}
+precis(m10.9stan,depth=2)
+summary(m10.9bmr)
+```
+
+the two models have thr same coefficients!
+
+## Q2
+
+Refit models 12.1 and 12.2 (Rcode 12.2 and 12.3) with brms
+
+### stan code
+
+```{r}
+data(reedfrogs)
+d <- reedfrogs
+# make the tank cluster variable
+d$tank <- 1:nrow(d)
+# fit
+m12.1 <- map2stan(
+    alist(
+        surv ~ dbinom( density , p ) ,
+        logit(p) <- a_tank[tank] ,
+        a_tank[tank] ~ dnorm( 0 , 5 )
+), data=d )
+
+
+m12.2 <- map2stan(
+    alist(
+        surv ~ dbinom( density , p ) ,
+        logit(p) <- a_tank[tank] ,
+        a_tank[tank] ~ dnorm( a , sigma ) ,
+        a ~ dnorm(0,1) ,
+        sigma ~ dcauchy(0,1)
+    ), data=d , iter=4000 , chains=4 )
+
+```
+
+### bmr code
+
+```{r}
+
+
+m12.1bmr <- brm(surv | trials(density) ~ 0 + tank,
+             family = "binomial",
+             prior=set_prior("normal(0,5)", class="b"),
+             data = d
+             )
+
+### not really sure how to do this one...
+m12.2bmr <- brm(surv | trials(density) ~ 0 + tank,
+             family = "binomial",
+             prior=c(
+             set_prior("cauchy(0,1)", class="sd",group = "tank")),
+             data = d
+             )
+```
+
+## Q3
+
+Use both brms and map2stan to fit a model for `intleng` as a function of `species`, `trt` and their interaction, and include `shelf` as a random effect.
+
+why notation 1| shelf...
+
+```{r}
+
+
+
+
+tomato <- read.csv("/Users/gturco/Desktop/code/Rclub-rethinking_Gina.Turco/Assignment_Chapter_09/TomatoR2CSHL.csv") #adjust path as necesary
+summary(tomato)
+head(tomato)
+
+intlen.bmr <- brm(intleng ~ trt + species + (1|shelf),
+            data = tomato,
+            prior = c(set_prior("normal(0,10)",class="b"), 
+                      set_prior("normal(0,5)",class="b", coef = "trtL"),
+                      set_prior("cauchy(0,1)", class = "sigma"),
+                      set_prior("normal(0,1)", class = "sd"))
+                      
+) 
+
+intlen.bmr$prior
+summary(intlen.bmr)
+
+
+tomato$trt2 <- as.numeric(tomato$trt) -1
+tomato$species2 <- coerce_index(tomato$species)
+tomato$shelf2 <- coerce_index(tomato$shelf)
+
+intlen.stan <- map2stan(
+    alist(
+        intleng ~ dnorm( mu , sigma ) ,
+        mu <- apha_species[species2] + bT*trt2 + a_shelf[shelf2]  ,
+        a_shelf[shelf2] ~ dnorm( 0 , 1 ) ,
+        apha_species[species2] ~ dnorm( 0 , 10 ) ,
+        bT ~ dnorm(0,5) ,
+        sigma ~ dcauchy(0,1)
+    ), data=tomato , iter=4000 , chains=4 )
+
+summary(intlen.bmr)
+precis(intlen.stan, depth=2)
+```
+
+These are pretty close to one another. Did not add interaction var wanted to test on simpler model. Would we add the intercept to each species here?

@@ -1,0 +1,6 @@
+unnamed-chunk-1	==	~	$	$<-	a	alist	bm	coerce_index	data	dept_id	ifelse	library	logit<-	male	map	map2stan	UCBadmit
+unnamed-chunk-2	~	brm	d	set_prior
+unnamed-chunk-3	m10.9bmr	m10.9stan	precis	summary
+unnamed-chunk-4	~	$<-	a_tank	alist	data	logit<-	map2stan	nrow	reedfrogs	tank
+unnamed-chunk-5	~	brm	c	d	set_prior
+unnamed-chunk-6	~	$	$<-	a_shelf	alist	apha_species	as.numeric	brm	bT	c	coerce_index	head	map2stan	precis	read.csv	set_prior	shelf2	species2	summary	trt2
