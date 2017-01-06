@@ -1,0 +1,30 @@
+install	
+get_tomato	tomato	.Random.seed
+fit_hyp1	hyp1	.__C__Rcpp_stan_fit4modela5a822dddeed_filea5a8316226bf	.__global__	.requireCachedGenerics
+examine_hyp1	
+shiny	
+hyp1_again	
+hyp2	hyp2	.__C__Rcpp_stan_fit4modela5a84a5f997_filea5a8672077fe
+get_prior_example	
+get_prior2	
+hyp3	hyp3	.__C__Rcpp_stan_fit4modela5a866a754c6_filea5a856c4224a
+hyp4	
+hyp5	hyp5	.__C__Rcpp_stan_fit4modela5a86c08f088_filea5a847295acf
+examine_hyp5	
+waic_loo	
+hyp6_7	hyp6	hyp7	.__C__Rcpp_stan_fit4modela5a84b37ef0_filea5a81ea777f1	.__C__Rcpp_stan_fit4modela5a8513e0f28_filea5a8568d379c
+hyp6_7_examine	
+germ_Data	germination
+germ1	germ1	.__C__Rcpp_stan_fit4modela5a8385f698c_filea5a81e1dd456
+examine_germ1	
+germ2	germ2	.__C__Rcpp_stan_fit4modela5a8200b914a_filea5a856bb4282
+examine_germ2	
+hypothesis1	
+hypoth2	
+hypoth3	
+unnamed-chunk-1	d	m10.9	m10.9stan	.__C__Rcpp_stan_fit4modela5a85db643c6_admit___dbinom_applications__p_	UCBadmit
+unnamed-chunk-2	m10.9bmr	.__C__Rcpp_stan_fit4modela5a826a79ff0_filea5a83f44723b
+unnamed-chunk-3	
+unnamed-chunk-4	d	m12.1	m12.2	.__C__Rcpp_stan_fit4modela5a837f0749e_surv___dbinom_density__p_	.__C__Rcpp_stan_fit4modela5a8793e1069_surv___dbinom_density__p_	reedfrogs
+unnamed-chunk-5	m12.1bmr	m12.2bmr	.__C__Rcpp_stan_fit4modela5a835515cd9_filea5a87ffce9ac	.__C__Rcpp_stan_fit4modela5a87794afca_filea5a843c207e6
+unnamed-chunk-6	intlen.bmr	intlen.stan	tomato	.__C__Rcpp_stan_fit4modela5a8108a1a53_filea5a85b4cd269	.__C__Rcpp_stan_fit4modela5a822292e67_intleng___dnorm_mu__sigma_

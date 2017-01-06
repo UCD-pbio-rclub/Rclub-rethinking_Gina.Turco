@@ -1,0 +1,30 @@
+install	install_github	library
+get_tomato	::	head	library	options	read.csv	rstan_options	summary
+fit_hyp1	~	brm	set_prior	tomato
+examine_hyp1	hyp1	plot	summary
+shiny	hyp1	launch_shiny
+hyp1_again	~	brm	set_prior	tomato
+hyp2	~	brm	c	set_prior	tomato
+get_prior_example	~	get_prior	tomato
+get_prior2	$	hyp2
+hyp3	~	brm	c	set_prior	tomato
+hyp4	~	brm	plot	set_prior	summary	tomato
+hyp5	~	brm	set_prior	tomato
+examine_hyp5	hyp5	plot	summary
+waic_loo	hyp1	hyp5	loo	waic
+hyp6_7	~	brm	c	set_prior	tomato
+hyp6_7_examine	hyp6	hyp7	loo	summary
+germ_Data	==	$	$<-	head	ifelse	min	read.csv	summary
+germ1	~	brm	germination	set_prior
+examine_germ1	germ1	plot	summary
+germ2	~	brm	germination	set_prior
+examine_germ2	germ2	plot	summary
+hypothesis1	hyp1	hypothesis	plot	summary
+hypoth2	hyp1	hypothesis	plot	summary
+hypoth3	hyp1	hypothesis	plot
+unnamed-chunk-1	==	~	$	$<-	a	alist	bm	coerce_index	data	dept_id	ifelse	library	logit<-	male	map	map2stan	UCBadmit
+unnamed-chunk-2	~	brm	d	set_prior
+unnamed-chunk-3	m10.9bmr	m10.9stan	precis	summary
+unnamed-chunk-4	~	$<-	a_tank	alist	data	logit<-	map2stan	nrow	reedfrogs	tank
+unnamed-chunk-5	~	brm	c	d	set_prior
+unnamed-chunk-6	~	$	$<-	a_shelf	alist	apha_species	as.numeric	brm	bT	c	coerce_index	head	map2stan	precis	read.csv	set_prior	shelf2	species2	summary	trt2

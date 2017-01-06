@@ -1,0 +1,7 @@
+base
+Rcpp
+ggplot2
+brms
+StanHeaders
+rstan
+rethinking
