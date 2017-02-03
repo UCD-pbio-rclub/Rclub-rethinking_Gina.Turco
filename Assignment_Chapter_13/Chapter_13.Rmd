@@ -17,10 +17,8 @@ yi ∼ Normal(μi, σ)
                          β ], S)
                          
 S = (σα, 0 ` R(σα, 0
+0, σβ)   0, σβ)
 
-      0, σβ)   0, σβ)
-      
-      
 α ∼ Normal(0, 10)
 β ∼ Normal(0, 1)
 σ ∼ HalfCauchy(0, 2)
@@ -40,6 +38,13 @@ slope - difference between height measurments for young or older plants (measuri
 
 The shorter plants will remain with smaller growth and a samller difference
 The larger plants will have more growth inbetween these stages and a larger difference
+
+
+## 13E3. When is it possible for a varying slopes model to have fewerer effective parameters(as estimated by WAIC or DIC) than the corresponding model with  fixed (unpooled) slopes? Explain.
+
+There are fewer effective paramters when you are using uncentered.
+Does this have to do with rather than sampling from a distribution it is built into the modeling.. making the overall number of test/iterations need to run better. Its regulazing the information more towards what the data says? 
+
 
 ## 13M1
 ## Repeat the café robot simulation from the beginning of the chapter. This time,set rho to zero, so that there is no correlation between intercepts and slopes. How does the posterior distribution of the correlation reflect this change in the underlying simulation?
@@ -112,7 +117,11 @@ iter=5000 , warmup=2000 , chains=2 )
 ```{r}
 post <- extract.samples(m13.m1)
 dens( post$Rho[,1,2] )
-### these show a postive correlation rather than neg between slope and intercept?
+### these show a postive correlation rather than non between slope and intercept?
+
+##intercept and slope
+## morrining and afternoon wait time
+## most traffic in
 ```
 
 ## 13M2. Fit this multilevel model to the simulated café data: 
@@ -149,7 +158,59 @@ compare(m13.m1,m13.m2)
 
 These models are pretty much the same, except I amd confused why the dcauchy vars differ...
 
+## 13M3. Re-estimate the varying slopes model for the UCBadmit data, now using a non-centered pa- rameterization. Compare the eciency of the forms of the model, using n_eff. Which is better? Which chain sampled faster?
 
+nonparamterized should have better model needing less parmaters and should sample faster we will test
+
+```{r}
+library(rethinking)
+data(UCBadmit)
+d <- UCBadmit
+d$male <- ifelse( d$applicant.gender=="male" , 1 , 0 )
+d$dept_id <- coerce_index( d$dept )
+
+m13.3 <- map2stan(
+    alist(
+        admit ~ dbinom( applications , p ),
+        logit(p) <- a_dept[dept_id] +
+                    bm_dept[dept_id]*male,
+        c(a_dept,bm_dept)[dept_id] ~ dmvnorm2( c(a,bm) , sigma_dept , Rho ),
+        a ~ dnorm(0,10),
+        bm ~ dnorm(0,1),
+        sigma_dept ~ dcauchy(0,2),
+        Rho ~ dlkjcorr(2)
+),
+data=d , warmup=1000 , iter=5000 , chains=4 , cores=3 )
+
+
+
+
+
+m13.3NC <- map2stan(
+    alist(
+        admit ~ dbinom( applications , p ),
+        logit(p) <- a_dept[dept_id] +
+                    bm_dept[dept_id]*male,
+        c(a_dept,bm_dept)[dept_id] ~ dmvnormNC(sigma_dept , Rho ),
+        a ~ dnorm(0,10),
+        bm ~ dnorm(0,1),
+        sigma_dept ~ dcauchy(0,2),
+        Rho ~ dlkjcorr(2)
+),
+data=d , warmup=1000 , iter=5000 , chains=4 , cores=3 )
+
+#m13.3 There were 26 divergent iterations during sampling
+#m13.3NC There were 4 divergent transitions after warmup
+compare(m13.3, m13.3NC)
+
+precis(m13.3, depth=2)
+
+
+precis(m13.3NC, depth=2)
+```
+
+
+The data looked a little better, needed a litle less for N_eff, but WAIC showed two models were very similar. It did run much faster and have less divergernt chains
 
 ## 13H1. Let’s revisit the Bangladesh fertility data, data(bangladesh),from the practice problems for Chapter 12.
 
@@ -236,3 +297,5 @@ plot( nonurban , urban , xlab="nonurban" , ylab="urban" ,
 points( nonurban , urban , pch=1 ) 
 
 ```
+## julin ploting percentage in use to the correlation
+## if the average effect is not zero then include as a main effect in brms 1-represents an intercept
