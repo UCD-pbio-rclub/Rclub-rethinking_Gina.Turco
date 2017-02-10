@@ -42,8 +42,11 @@ The larger plants will have more growth inbetween these stages and a larger diff
 
 ## 13E3. When is it possible for a varying slopes model to have fewerer effective parameters(as estimated by WAIC or DIC) than the corresponding model with  fixed (unpooled) slopes? Explain.
 
+when mean slopes are small agression towards mean
+less support for them being differnt then more likey to be moved towards the average... have less unquie paramter for fitting...
+
 There are fewer effective paramters when you are using uncentered.
-Does this have to do with rather than sampling from a distribution it is built into the modeling.. making the overall number of test/iterations need to run better. Its regulazing the information more towards what the data says? 
+Does this have to do with rather than sampling from a distribution it is built into the modeling.... making the overall number of test/iterations need to run better. Its regulazing the information more towards what the data says? 
 
 
 ## 13M1
@@ -189,8 +192,8 @@ data=d , warmup=1000 , iter=5000 , chains=4 , cores=3 )
 m13.3NC <- map2stan(
     alist(
         admit ~ dbinom( applications , p ),
-        logit(p) <- a_dept[dept_id] +
-                    bm_dept[dept_id]*male,
+        logit(p) <- a + a_dept[dept_id] +
+                    bm + bm_dept[dept_id]*male,
         c(a_dept,bm_dept)[dept_id] ~ dmvnormNC(sigma_dept , Rho ),
         a ~ dnorm(0,10),
         bm ~ dnorm(0,1),
@@ -209,8 +212,62 @@ precis(m13.3, depth=2)
 precis(m13.3NC, depth=2)
 ```
 
-
 The data looked a little better, needed a litle less for N_eff, but WAIC showed two models were very similar. It did run much faster and have less divergernt chains
+
+
+## 13M4 Use WAIC to compare the Gaussian process model of Oceanic tools to the models  fit to the same data in Chapter 10. 
+
+## Pay special attention to the effective numbers of parameters, as estimated by WAIC.
+
+
+```{r}
+library(rethinking)
+data(islandsDistMatrix)
+# display short column names, so fits on screen
+Dmat <- islandsDistMatrix
+colnames(Dmat) <- c("Ml","Ti","SC","Ya","Fi","Tr","Ch","Mn","To","Ha")
+round(Dmat,1)
+
+data(Kline2) # load the ordinary data, now with coordinates
+d <- Kline2
+d$society <- 1:10 # index observations
+
+
+m13.7 <- map2stan(
+    alist(
+        total_tools ~ dpois(lambda),
+        log(lambda) <- a + g[society] + bp*logpop,
+        g[society] ~ GPL2( Dmat , etasq , rhosq , 0.01 ),
+        a ~ dnorm(0,10),
+        bp ~ dnorm(0,1),
+        etasq ~ dcauchy(0,1),
+        rhosq ~ dcauchy(0,1)
+    ),
+    data=list(
+        total_tools=d$total_tools,
+        logpop=d$logpop,
+        society=d$society,
+        Dmat=islandsDistMatrix),
+    warmup=2000 , iter=1e4 , chains=4 )
+
+d$log_pop <- log(d$population)
+d$contact_high <- ifelse( d$contact=="high" , 1 , 0 )
+
+
+
+
+m10.11 <- map(
+    alist(
+        total_tools ~ dpois( lambda ),
+        log(lambda) <- a + bp*log_pop + bc*contact_high,
+        a ~ dnorm(0,100),
+        c(bp,bc) ~ dnorm( 0 , 1 )
+), data=d )
+
+compare(m10.11, m13.7,n=1e4)
+
+```
+
 
 ## 13H1. Let’s revisit the Bangladesh fertility data, data(bangladesh),from the practice problems for Chapter 12.
 
@@ -299,3 +356,40 @@ points( nonurban , urban , pch=1 )
 ```
 ## julin ploting percentage in use to the correlation
 ## if the average effect is not zero then include as a main effect in brms 1-represents an intercept
+
+
+## 13H2. Varying effects models are useful for modeling time series, as well as spatial clustering. In a time series, the observations cluster by entities that have continuity through time, such as individuals. Since observations within individuals are likely highly correlated, the multilevel structure can help quite a lot. You’ll use the data in data(Oxboys), which is 234 height measurements on 26 boys from an Oxford Boys Club (I think these were like youth athletic leagues?), at 9 different ages (centered and standardized) per boy. You’ll be interested in predicting height, using age, clustered by Subject (individual boy).
+
+```{r}
+library(rethinking)
+
+data(Oxboys)
+o <- Oxboys
+
+subject_1 = subset(o ,Subject == 1)
+m <- as.matrix(dist(subject_1$age))
+
+
+m13.H2 <- map2stan(
+    alist(
+        height ~ dnorm( mu , sigma ),
+        mu <- a + g[Occasion] , 
+        g[Occasion] ~ GPL2( Amat , etasq , rhosq , 0.01 ),
+        a ~ dnorm(0,10),
+        etasq ~ dcauchy(0,1),
+        rhosq ~ dcauchy(0,1),
+        sigma ~ dnorm(0,10)
+    ),
+    data=list(
+        Occasion=o$Occasion,
+        Subject=o$Subject,
+        height = o$height,
+        Amat=m),
+    warmup=2000 , iter=1e4 , chains=4 )
+
+
+```
+
+
+## Fit a model with varying intercepts and slopes (on age), clustered by Subject. Present and in- terpret the parameter estimates. Which varying e ect contributes more variation to the heights, the intercept or the slope?
+
