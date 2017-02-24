@@ -1,0 +1,159 @@
+---
+title: "Chp_14 homework"
+output:
+  html_document:
+    keep_md: true
+---
+
+
+# 14E1. Rewrite the Oceanic tools model (from Chapter 10) below so that it assumes measured error on the log population sizes of each society.
+
+Dest,i ∼ Poisson(μi)
+logμi =α+βlogPi
+
+Dobs,i ∼ Normal(Dest,i, Dse,i)
+
+
+α ∼ Normal(0, 10) 
+β ∼ Normal(0, 1)
+
+
+
+
+## 14M3. Repeat the divorce data measurement error models, but this time double the standard errors. Can you explain how doubling the standard errors impacts inference?
+
+
+```{r}
+library(rethinking)
+data(WaffleDivorce)
+d <- WaffleDivorce
+
+
+dlist <- list(
+    div_obs=d$Divorce,
+    div_sd=d$Divorce.SE,
+    R=d$Marriage,
+    A=d$MedianAgeMarriage
+)
+
+
+m14.1 <- map2stan(
+    alist(
+        div_est ~ dnorm(mu,sigma),
+        mu <- a + bA*A + bR*R,
+        div_obs ~ dnorm(div_est,div_sd),
+        a ~ dnorm(0,10),
+        bA ~ dnorm(0,10),
+        bR ~ dnorm(0,10),
+        sigma ~ dcauchy(0,2.5)
+),
+data=dlist ,
+start=list(div_est=dlist$div_obs) ,
+WAIC=FALSE , iter=5000 , warmup=1000 , chains=2 , cores=2 ,
+control=list(adapt_delta=0.95) )
+
+```
+
+# double standerd error
+
+```{r}
+dlist2SE <- list(
+    div_obs=d$Divorce,
+    div_sd=d$Divorce.SE * 2,
+    R=d$Marriage,
+    A=d$MedianAgeMarriage
+)
+
+
+m14.M3 <- map2stan(
+    alist(
+        div_est ~ dnorm(mu,sigma),
+        mu <- a + bA*A + bR*R,
+        div_obs ~ dnorm(div_est,div_sd),
+        a ~ dnorm(0,10),
+        bA ~ dnorm(0,10),
+        bR ~ dnorm(0,10),
+        sigma ~ dcauchy(0,2.5)
+),
+data=dlist2SE ,
+start=list(div_est=dlist2SE$div_obs) ,
+WAIC=FALSE , iter=5000 , warmup=1000 , chains=2 , cores=2 ,
+control=list(adapt_delta=0.95) )
+
+
+```
+
+
+## 14H1. The data in data(elephants) are counts of matings observed for bull elephants of differing ages.  There is a strong positive relationship between age and matings. However, age is not always assessed accurately. First,  t a Poisson model predicting MATINGS with AGE as a predictor. 
+
+
+```{r}
+data(elephants)
+e <- elephants
+summary(e)
+
+m14.H1a <- map2stan(
+    alist(
+        MATINGS ~ dpois( lambda ),
+        log(lambda) <- a + bA*AGE,
+        a ~ dnorm(0,50),
+        bA ~ dnorm(0,5)
+), data=e )
+
+precis(m14.H1a)
+
+```
+
+## Second, assume that the observed AGE values are uncertain and have a standard error of ±5 years. Re-estimate the relationship between MATINGS and AGE, incorporating this measurement error. Compare the inferences of the two models.
+
+
+```{r}
+elist <- list(
+    MATINGS=e$MATINGS,
+    age_sd=rep(5,length(e$AGE)),
+    age_obs=e$AGE
+)
+
+m14.H1b <- map2stan(
+    alist(
+        MATINGS ~ dpois( lambda ),
+        log(lambda) <- a + bA*age_est[i],
+        age_obs ~ dnorm(age_est,age_sd),       
+        a ~ dnorm(0,50),
+        bA ~ dnorm(0,5)
+), data=elist,
+start=list(age_est=elist$age_obs) ,
+WAIC=FALSE , iter=5000 , warmup=1000 , chains=2 , cores=2 ,
+control=list(adapt_delta=0.95) )
+
+
+precis(m14.H1b, depth=2)
+WAIC(m14.H1a,m14.H1b)
+
+```
+
+
+## 14H2. Repeat the model  fitting problem above, now increasing the assumed standard error on AGE. How large does the standard error have to get before the posterior mean for the coeffcient on AGE reaches zero?
+
+```{r}
+
+elist2 <- list(
+    MATINGS=e$MATINGS,
+    age_sd=rep(10,length(e$AGE)),
+    age_obs=e$AGE
+)
+
+m14.H2 <- map2stan(
+    alist(
+        MATINGS ~ dpois( lambda ),
+        log(lambda) <- a + bA*age_est[i],
+        age_obs ~ dnorm(age_est,age_sd),       
+        a ~ dnorm(0,50),
+        bA ~ dnorm(0,5)
+), data=elist2,
+start=list(age_est=elist2$age_obs) ,
+WAIC=FALSE , iter=5000 , warmup=1000 , chains=2 , cores=2 ,
+control=list(adapt_delta=0.95) )
+
+precis(m14.H2)
+```
