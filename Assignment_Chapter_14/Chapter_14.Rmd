@@ -18,7 +18,77 @@ Dobs,i ∼ Normal(Dest,i, Dse,i)
 β ∼ Normal(0, 1)
 
 
+## 14E2. Rewrite the same model so that it allows imputation of missing values for log population.  Tere aren’t any missing values in the variable, but you can still write down a model formula that would imply imputation, if any values were missing.
 
+Dest,i ∼ Poisson(μi)
+logμi =α+βlogPi
+Pi ∼ Normal(ν, σN)
+Dobs,i ∼ Normal(Dest,i, Dse,i)
+
+
+α ∼ Normal(0, 10) 
+β ∼ Normal(0, 1)
+
+
+## 14M1. Using the mathematical form of the imputation model in the chapter, explain what is being assumed about how the missing values were generated.
+
+Both models assume that the data is not missing due to bais in collection.
+Both models are assuming that the missing data is normaly distributed. 
+The second model assumes that their is a linear relationship.
+
+## 14M2. In earlier chapters, we threw away cases from the primate milk data, so we could use the neocortex variable. Now repeat the WAIC model comparison example from Chapter 6, but use im- putation on the neocortex variable so that you can include all of the cases in the original data.  e simplest form of imputation is acceptable. How are the model comparison results a effcted by being able to include all of the cases?
+
+```{r}
+library(rethinking)
+data(milk)
+d <- milk
+d$neocortex.prop <- d$neocortex.perc / 100
+d$logmass <- log(d$mass)
+
+# prep data
+data_list <- list(
+    kcal = d$kcal.per.g,
+    neocortex = d$neocortex.prop,
+    logmass = d$logmass )
+# fit model
+m14.3 <- map2stan(
+    alist(
+        kcal ~ dnorm(mu,sigma),
+        mu <- a + bN*neocortex + bM*logmass,
+        neocortex ~ dnorm(nu,sigma_N),
+        a ~ dnorm(0,100),
+        c(bN,bM) ~ dnorm(0,10),
+        nu ~ dnorm(0.5,1),
+        sigma_N ~ dcauchy(0,1),
+        sigma ~ dcauchy(0,1)
+),
+data=data_list , iter=1e4 , chains=2 )
+
+
+
+dcc <- d[ complete.cases(d$neocortex.prop) , ]
+data_list_cc <- list(
+    kcal = dcc$kcal.per.g,
+    neocortex = dcc$neocortex.prop,
+    logmass = dcc$logmass )
+# fit model
+m14.3cc <- map2stan(
+    alist(
+        kcal ~ dnorm(mu,sigma),
+        mu <- a + bN*neocortex + bM*logmass,
+        a ~ dnorm(0,100),
+        c(bN,bM) ~ dnorm(0,10),
+        sigma ~ dcauchy(0,1)
+),
+    data=data_list_cc , iter=1e4 , chains=2 )
+precis(m14.3cc)
+
+
+compare(m14.3cc,m14.3)
+
+```
+
+# The model without missing data is favoried but has a larger SE as expected
 
 ## 14M3. Repeat the divorce data measurement error models, but this time double the standard errors. Can you explain how doubling the standard errors impacts inference?
 
@@ -157,3 +227,5 @@ control=list(adapt_delta=0.95) )
 
 precis(m14.H2)
 ```
+
+
